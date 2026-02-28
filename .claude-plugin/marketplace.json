@@ -1,0 +1,16 @@
+{
+  "name": "satone-skills",
+  "owner": {
+    "name": "Satone7"
+  },
+  "metadata": {
+    "description": "Personal collection of Claude Code skills for enhanced AI-assisted development workflows."
+  },
+  "plugins": [
+    {
+      "name": "writing-plans-plus",
+      "source": "./plugins/writing-plans-plus",
+      "description": "Enhanced planning with structured, machine-readable task format based on writing-plans"
+    }
+  ]
+}

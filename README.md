@@ -23,7 +23,12 @@ A structured planning tool that generates machine-readable task lists for softwa
 
 1. 添加本仓库到 Claude Code Marketplace：
    ```
-   /plugin add https://github.com/Satone7/skills.git
+   /plugin marketplace add Satone7/skills
+   ```
+
+   或使用完整 URL：
+   ```
+   /plugin marketplace add https://github.com/Satone7/skills.git
    ```
 
 2. 查看可用的 skills：
@@ -33,7 +38,7 @@ A structured planning tool that generates machine-readable task lists for softwa
 
 3. 安装所需的 skill：
    ```
-   /plugin install writing-plans-plus
+   /plugin install writing-plans-plus@satone-skills
    ```
 
 #### 方法2：手动安装
@@ -42,7 +47,7 @@ A structured planning tool that generates machine-readable task lists for softwa
 
 ```bash
 mkdir -p ~/.claude/skills/
-cp -r /path/to/this/repo/writing-plans-plus ~/.claude/skills/
+cp -r /path/to/this/repo/plugins/writing-plans-plus ~/.claude/skills/
 ```
 
 ### OpenClaw
@@ -51,7 +56,12 @@ cp -r /path/to/this/repo/writing-plans-plus ~/.claude/skills/
 
 1. 添加本仓库到 OpenClaw Marketplace：
    ```
-   /plugin add https://github.com/Satone7/skills.git
+   /plugin marketplace add Satone7/skills
+   ```
+
+   或使用完整 URL：
+   ```
+   /plugin marketplace add https://github.com/Satone7/skills.git
    ```
 
 2. 查看可用的 skills：
@@ -61,7 +71,7 @@ cp -r /path/to/this/repo/writing-plans-plus ~/.claude/skills/
 
 3. 安装所需的 skill：
    ```
-   /plugin install writing-plans-plus
+   /plugin install writing-plans-plus@satone-skills
    ```
 
 #### 方法2：手动安装
@@ -70,7 +80,23 @@ cp -r /path/to/this/repo/writing-plans-plus ~/.claude/skills/
 
 ```bash
 mkdir -p ~/.openclaw/skills/
-cp -r /path/to/this/repo/writing-plans-plus ~/.openclaw/skills/
+cp -r /path/to/this/repo/plugins/writing-plans-plus ~/.openclaw/skills/
+```
+
+## Repository Structure
+
+```
+skills/
+├── .claude-plugin/
+│   └── marketplace.json     # Marketplace definition
+├── plugins/
+│   └── writing-plans-plus/
+│       ├── .claude-plugin/
+│       │   └── plugin.json  # Plugin manifest
+│       └── skills/
+│           └── writing-plans-plus/
+│               └── SKILL.md  # Skill definition
+└── README.md
 ```
 
 ## License
