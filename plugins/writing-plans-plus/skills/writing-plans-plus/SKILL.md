@@ -19,7 +19,9 @@ This skill extends `superpowers:writing-plans` with **structured task definition
 
 **Context:** This should be run in a dedicated worktree (created by brainstorming skill).
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md` AND `docs/plans/YYYY-MM-DD-<feature-name>.json`
+**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.json`
+
+**Note:** Only save `.md` file when user explicitly requests a human-readable plan document. Default to JSON-only.
 
 ---
 
@@ -235,7 +237,7 @@ Each task MUST be defined with the following fields:
 
 When updating task status during execution:
 
-1. **Update both files** - Keep `.md` and `.json` in sync
+1. **Update JSON file** - Only update `.json` file by default
 2. **Set `passes: true`** only when ALL validation criteria pass
 3. **Add completion metadata:**
    ```json
@@ -247,7 +249,7 @@ When updating task status during execution:
    }
    ```
 
-4. **In Markdown:** Update status indicator
+4. **Markdown only when requested:** If `.md` file exists (user requested it), keep it in sync with JSON
    ```markdown
    **ID:** 1 | **Status:** ✅ Completed | **Passes:** `true`
    ```
@@ -264,7 +266,7 @@ Before marking any plan complete, verify:
 - [ ] File paths use exact relative paths
 - [ ] Steps are specific and verifiable
 - [ ] Validation criteria are objective (pass/fail)
-- [ ] Both `.md` and `.json` outputs are saved
+- [ ] JSON output is saved
 
 ---
 
@@ -274,7 +276,7 @@ When this plan is executed via `superpowers:executing-plans`:
 
 1. **Execution order** follows task IDs by default
 2. **Dependency resolution:** Tasks with `depends_on` must wait for dependencies
-3. **Status updates:** After each task, update `passes` and sync both files
+3. **Status updates:** After each task, update `passes` in JSON file
 4. **Validation:** Run validation criteria before marking `passes: true`
 5. **Checkpointing:** Each completed task is a checkpoint - can resume from any point
 
@@ -288,7 +290,7 @@ When this plan is executed via `superpowers:executing-plans`:
 | Completion tracking | Implicit | Explicit via `passes` field |
 | Machine readable | No | Yes (JSON output) |
 | Validation criteria | Optional | Required |
-| File outputs | `.md` only | `.md` + `.json` |
+| File outputs | `.md` only | `.json` (default), `.md` (optional on request) |
 | Dependencies | Implied | Explicit via `depends_on` |
 
 ---
