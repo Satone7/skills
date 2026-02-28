@@ -47,22 +47,31 @@ cp -r /path/to/this/repo/writing-plans-plus ~/.claude/skills/
 
 ### OpenClaw
 
-在 OpenClaw 中安装 skills：
+#### 方法1：通过 Marketplace 安装（推荐）
 
-1. 克隆本仓库：
-   ```bash
-   git clone https://github.com/Satone7/skills.git ~/my-skills
+1. 添加本仓库到 OpenClaw Marketplace：
+   ```
+   /plugin add https://github.com/Satone7/skills.git
    ```
 
-2. 在 OpenClaw 配置中添加 skills 路径：
-   ```yaml
-   # ~/.openclaw/config.yaml
-   skills:
-     paths:
-       - ~/my-skills/writing-plans-plus
+2. 查看可用的 skills：
+   ```
+   /plugin list
    ```
 
-3. 重启 OpenClaw 或重新加载配置。
+3. 安装所需的 skill：
+   ```
+   /plugin install writing-plans-plus
+   ```
+
+#### 方法2：手动安装
+
+将 skill 目录复制到 OpenClaw skills 目录：
+
+```bash
+mkdir -p ~/.openclaw/skills/
+cp -r /path/to/this/repo/writing-plans-plus ~/.openclaw/skills/
+```
 
 ## License
 
