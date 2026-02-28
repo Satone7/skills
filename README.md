@@ -15,15 +15,54 @@ A structured planning tool that generates machine-readable task lists for softwa
 - Generates machine-readable task lists
 - Integrates with task management systems
 
-## Usage
+## Installation
 
-These skills are designed for use with Claude Code. Place them in your Claude skills directory:
+### Claude Code
+
+#### 方法1：通过 Marketplace 安装（推荐）
+
+1. 添加本仓库到 Claude Code Marketplace：
+   ```
+   /plugin add /root/wsp/skills
+   ```
+
+2. 查看可用的 skills：
+   ```
+   /plugin list
+   ```
+
+3. 安装所需的 skill：
+   ```
+   /plugin install writing-plans-plus
+   ```
+
+#### 方法2：手动安装
+
+将 skill 目录复制到 Claude Code skills 目录：
 
 ```bash
-~/.claude/skills/
+mkdir -p ~/.claude/skills/
+cp -r /path/to/this/repo/writing-plans-plus ~/.claude/skills/
 ```
 
-Or reference them from this repository when needed.
+### OpenClaw
+
+在 OpenClaw 中安装 skills：
+
+1. 克隆本仓库：
+   ```bash
+   git clone /root/wsp/skills ~/my-skills
+   ```
+
+2. 在 OpenClaw 配置中添加 skills 路径：
+   ```yaml
+   # ~/.openclaw/config.yaml
+   skills:
+     paths:
+       - ~/my-skills/writing-plans-plus
+   ```
+
+3. 重启 OpenClaw 或重新加载配置。
 
 ## License
 
