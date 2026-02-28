@@ -23,7 +23,7 @@ A structured planning tool that generates machine-readable task lists for softwa
 
 1. 添加本仓库到 Claude Code Marketplace：
    ```
-   /plugin add /root/wsp/skills
+   /plugin add https://github.com/Satone7/skills.git
    ```
 
 2. 查看可用的 skills：
@@ -51,7 +51,7 @@ cp -r /path/to/this/repo/writing-plans-plus ~/.claude/skills/
 
 1. 克隆本仓库：
    ```bash
-   git clone /root/wsp/skills ~/my-skills
+   git clone https://github.com/Satone7/skills.git ~/my-skills
    ```
 
 2. 在 OpenClaw 配置中添加 skills 路径：
