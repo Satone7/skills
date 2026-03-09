@@ -16,6 +16,11 @@
       "name": "find-next-task",
       "source": "./plugins/find-next-task",
       "description": "Find the next executable task from writing-plans-plus JSON plan files. Use this skill whenever you need to locate the next task to work on, check task status, or understand what to do next in a project with structured plans."
+    },
+    {
+      "name": "executing-single-task",
+      "source": "./plugins/executing-single-task",
+      "description": "Execute exactly one writing-plans-plus task (from find-next-task output) in a low-context subagent, update the plan JSON task passes field, and create exactly one git commit for that task."
     }
   ]
 }

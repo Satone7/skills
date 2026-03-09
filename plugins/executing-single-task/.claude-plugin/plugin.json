@@ -1,0 +1,5 @@
+{
+  "name": "executing-single-task",
+  "description": "Execute exactly one writing-plans-plus task (from find-next-task output) in a low-context subagent, update the plan JSON task passes field, and create exactly one git commit for that task. Use this when you are executing tasks one-by-one downstream of find-next-task.",
+  "version": "0.1.0"
+}
