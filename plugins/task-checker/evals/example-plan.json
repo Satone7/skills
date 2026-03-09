@@ -1,0 +1,71 @@
+{
+  "project": "Example Project",
+  "description": "A small sample writing-plans-plus plan used for task-checker evals.",
+  "goal": "Demonstrate per-task completion, drift detection, and test adequacy auditing.",
+  "architecture": "Tasks are intentionally varied: one is complete with strong criteria, one is partial with weak testing, and one depends on another task.",
+  "tech_stack": ["TypeScript", "Node.js", "Jest"],
+  "created_at": "2026-03-09",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Add request ID propagation",
+      "description": "Propagate a request_id through logging so traces are correlated across services.",
+      "steps": [
+        "Add request_id field to request context",
+        "Ensure logger includes request_id in all log lines",
+        "Add unit tests for request_id propagation"
+      ],
+      "passes": true,
+      "files": {
+        "modify": ["src/logger.ts", "src/requestContext.ts"],
+        "test": ["src/logger.test.ts"]
+      },
+      "validation_criteria": [
+        "Logger output includes request_id when present in context",
+        "When request_id is missing, logger does not print placeholder strings",
+        "Unit tests assert request_id formatting and propagation behavior"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Implement JSON config loader",
+      "description": "Load config from a JSON file with schema validation and helpful error messages.",
+      "steps": [
+        "Add JSON config loader",
+        "Validate required keys and types",
+        "Add tests for invalid configs"
+      ],
+      "passes": false,
+      "files": {
+        "create": ["src/config/loadConfig.ts"],
+        "test": ["src/config/loadConfig.test.ts"]
+      },
+      "validation_criteria": [
+        "Invalid config files produce actionable error messages",
+        "Missing required keys are rejected",
+        "Tests cover at least one success and one failure case"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Add CLI flag --config",
+      "description": "Allow selecting config file path via a --config CLI flag.",
+      "steps": [
+        "Add --config flag to CLI parsing",
+        "Wire flag into config loader",
+        "Add integration test that runs CLI with --config"
+      ],
+      "passes": false,
+      "depends_on": [2],
+      "files": {
+        "modify": ["src/cli.ts"],
+        "test": ["src/cli.integration.test.ts"]
+      },
+      "validation_criteria": [
+        "CLI accepts --config <path> and uses it to load configuration",
+        "If the config file does not exist, CLI exits non-zero with clear error",
+        "Integration test asserts behavior via exit code and stderr contents"
+      ]
+    }
+  ]
+}

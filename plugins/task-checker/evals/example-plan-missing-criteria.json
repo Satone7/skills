@@ -1,0 +1,42 @@
+{
+  "project": "Example Project (Missing Criteria)",
+  "description": "A sample plan with missing/vague acceptance criteria to test task-checker precondition handling.",
+  "goal": "Ensure task-checker refuses to guess when tasks are not objectively auditable.",
+  "architecture": "Some tasks intentionally omit validation_criteria or include vague non-verifiable criteria.",
+  "tech_stack": ["Python"],
+  "created_at": "2026-03-09",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Refactor parsing module",
+      "description": "Refactor parser internals to be cleaner.",
+      "steps": ["Refactor code", "Make it better"],
+      "passes": false
+    },
+    {
+      "id": 2,
+      "title": "Add config file support",
+      "description": "Support reading configuration from a file.",
+      "steps": [
+        "Add config file reader",
+        "Update docs"
+      ],
+      "passes": false,
+      "validation_criteria": [
+        "Works as expected",
+        "Looks good"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Add tests",
+      "description": "Add tests for config reader.",
+      "steps": ["Write tests"],
+      "passes": false,
+      "validation_criteria": [
+        "At least one success test asserts returned config structure",
+        "At least one failure test asserts error type/message for invalid config"
+      ]
+    }
+  ]
+}

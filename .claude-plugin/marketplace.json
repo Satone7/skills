@@ -21,6 +21,11 @@
       "name": "executing-single-task",
       "source": "./plugins/executing-single-task",
       "description": "Execute exactly one writing-plans-plus task (from find-next-task output) in a low-context subagent, update the plan JSON task passes field, and create exactly one git commit for that task."
+    },
+    {
+      "name": "task-checker",
+      "source": "./plugins/task-checker",
+      "description": "Strictly audits a writing-plans-plus JSON plan for per-task completion, description accuracy, and test adequacy (ignore CI). Use whenever user asks to audit a plan, validate acceptance criteria, or request gap analysis and minimal test additions."
     }
   ]
 }

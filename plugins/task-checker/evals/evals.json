@@ -1,0 +1,29 @@
+{
+  "skill_name": "task-checker",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Strictly audit this writing-plans-plus JSON plan file for per-task completion, description accuracy, and test adequacy (ignore CI): plugins/task-checker/evals/example-plan.json. For each task, produce an “acceptance→evidence (code/tests/runtime)” mapping and a minimal test-additions list.",
+      "expected_output": "Outputs an overview + per-task audit table; each task includes completion/description-accuracy/evidence links/gaps/minimal test additions; clearly identifies skeleton-only tasks, DISABLED tests, and tests without meaningful assertions.",
+      "files": [
+        "plugins/task-checker/evals/example-plan.json"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I have a writing-plans-plus plan file, but the acceptance/done criteria are missing or vague: plugins/task-checker/evals/example-plan-missing-criteria.json. First, list the plan-structure gaps that violate audit preconditions and the minimal required fields to add. Then perform a partial audit (Partial) only for the parts that are objectively auditable. Do not guess missing information.",
+      "expected_output": "First outputs a plan-structure gap list + minimal required fields. For auditable tasks, outputs Partial/Not Done with evidence-based reasons. Explicitly refuses to declare completion for tasks lacking verifiable criteria.",
+      "files": [
+        "plugins/task-checker/evals/example-plan-missing-criteria.json"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Only audit task ids [2, 3] from the plan: plugins/task-checker/evals/example-plan.json. For each task, report completion, description accuracy, and test adequacy, plus minimal test additions. Explicitly call out validations that are “script ran” without assertions and tests that are DISABLED.",
+      "expected_output": "Outputs audits only for the requested tasks; each task includes evidence mapping and gaps; differentiates script-run validation from assertion-based testing; detects coverage gaps caused by DISABLED tests.",
+      "files": [
+        "plugins/task-checker/evals/example-plan.json"
+      ]
+    }
+  ]
+}
