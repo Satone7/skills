@@ -1,0 +1,24 @@
+{
+  "skill_name": "executing-single-task",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "你现在是一个低上下文 subagent。输入将是 find-next-task 的完整输出 JSON（包含 plan_file 和 next_task）。请按 executing-single-task 技能执行 next_task：\n\n场景：在一个临时 git 仓库中创建一个 writing-plans-plus 计划文件 /tmp/executing-single-task-eval/plan.json，包含 2 个 tasks（id 1 和 2），task 1 的 steps 要求创建一个文件 hello.txt 并写入 'hello'，验证步骤是运行 `test -f hello.txt && grep -q hello hello.txt`。初始 passes 都为 false。\n\n然后构造一份 find-next-task 输出 JSON（plan_file 指向该 plan.json，next_task 为 task 1，selection_required=false,error=null），并把它作为输入执行。执行后你必须：\n- 将 plan.json 中 task 1 的 passes 更新为 true（只改 passes）\n- 创建一次 git commit（包含 hello.txt 和 plan.json 的变更）\n- 最后输出严格 JSON（不带任何额外文字）。",
+      "expected_output": "输出为单个 JSON 对象；包含 result=SUCCESS；passes_written=true；commit.created=true 且 sha 非空；verification_evidence 至少包含 1 条 command 证据；plan.json 仅 task 1 的 passes 发生变化。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "你现在是一个低上下文 subagent。输入将是 find-next-task 的完整输出 JSON。请按 executing-single-task 技能执行 next_task。\n\n场景：在 /tmp/executing-single-task-eval2/ 创建一个 writing-plans-plus 计划文件 plan.json，task 1 的 steps 只有“实现功能”类描述，没有明确验证命令，但有 validation_criteria: [\"可以通过运行项目测试验证\"]。这个临时仓库是一个最小 Node 项目（你需要创建 package.json + 一个简单测试脚本），使得 `npm test` 能验证你的实现。\n\n要求：你必须在执行过程中先加载 using-superpowers，寻找合适的验证方式，然后给出可执行的验证证据（例如 npm test），再决定 passes。执行后更新 passes（只改 passes），并提交一次 commit。最后输出严格 JSON。",
+      "expected_output": "输出为单个 JSON 对象；verification_evidence 中包含 npm test（或等价可执行验证）及 exit_code；passes_written 的值与验证结果一致；commit.created=true 且 sha 非空；不输出 prose。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "你现在是一个低上下文 subagent。输入将是 find-next-task 的完整输出 JSON。请按 executing-single-task 技能处理该输入。\n\n场景：构造一个 find-next-task 输出 JSON，其中 selection_required=true（或 next_task=null），error=null。plan_file 可以是任意绝对路径。\n\n要求：你必须 fail-fast：不做任何文件变更、不提交 commit，输出严格 JSON，result=BLOCKED，并在 errors[] 给出机器可解析的错误 code/message。",
+      "expected_output": "输出为单个 JSON 对象；result=BLOCKED；commit.created=false；passes_written=false；errors[] 非空；无任何文件修改或 git commit。",
+      "files": []
+    }
+  ]
+}
+
