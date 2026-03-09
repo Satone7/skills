@@ -79,7 +79,7 @@ Each task MUST be defined with the following fields:
 | `issue` | array<string> | **Cross-validation issues**: List of problems found during task review (see [Task Cross-Validation Protocol](#task-cross-validation-protocol)) |
 | `completed_at` | string | ISO timestamp when task was completed |
 | `completed_by` | string | Who completed the task |
-| `notes` | string | Additional notes about completion |
+| `notes` | string | Additional notes about completion. If `passes` is changed from `true` to `false`, do NOT describe problems in `notes`—use `issue` (you may preserve prior completion notes for audit trail) |
 
 ---
 
@@ -206,9 +206,10 @@ Cross-validation should be performed:
 If any issues are discovered during review:
 
 1. **Set `passes: false`** - Roll back the completion status
-2. **Add `issue` field** - Array of strings describing each problem found
+2. **Add `issue` field** - REQUIRED. Non-empty array of strings describing each problem found
 3. **Keep completion metadata** - Preserve `completed_at`, `completed_by` for audit trail (optional)
 4. **Update task description if needed** - If task description was ambiguous or incorrect, update it to match what should have been implemented
+5. **Do not use `notes` to describe issues** - When changing `passes` from `true` to `false`, explain problems in `issue` (not `notes`)
 
 **Example: Task with issues found during review**
 ```json
@@ -246,7 +247,7 @@ If any issues are discovered during review:
   ],
   "completed_at": "2024-01-15T10:30:00Z",
   "completed_by": "Claude",
-  "notes": "Initial implementation completed but issues found during review"
+  "notes": "Initial implementation completed"
 }
 ```
 

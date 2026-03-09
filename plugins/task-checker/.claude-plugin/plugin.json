@@ -1,5 +1,5 @@
 {
   "name": "task-checker",
   "description": "Strictly audits a writing-plans-plus JSON plan for per-task completion, description accuracy, and test adequacy (ignore CI).",
-  "version": "1.1.0"
+  "version": "1.1.1"
 }

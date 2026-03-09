@@ -220,6 +220,25 @@ Only output if clear plan drift/mismatch is found:
 - which tasks/milestones should be updated or split
 - which acceptance criteria should be converted from “soft signals” to “hard evidence”
 
+### D. Apply Revisions to Plan JSON (only when user explicitly requests it)
+
+If the user instructs you to update the plan JSON file based on your audit, you must:
+
+1. **Update only the existing plan JSON file** at the provided path (no new fields, no new formats).
+2. **Strictly follow the `writing-plans-plus` schema** for all edits:
+   - Do NOT introduce any field names outside the schema (no audit-only metadata like `status`, `gaps`, `risk`, `review`, etc.).
+   - You may add or edit only schema fields (e.g., `title`, `description`, `steps`, `files`, `depends_on`, `validation_criteria`, `passes`, `issue`, `completed_at`, `completed_by`, `notes`).
+3. **When downgrading completion:** if a task currently has `passes: true` but your audit concludes it is not actually complete (Partial / Not Done), then:
+   - Set `passes: false`
+   - Add `issue`: a **non-empty** array of strings describing the concrete problems you found
+   - Do NOT use `notes` to describe issues (issues belong in `issue`)
+   - Preserve any existing completion metadata (`completed_at`, `completed_by`, and prior completion `notes`) for audit trail
+4. **When fixing plan drift/mis-specification:** update only schema fields to make the task auditable:
+   - tighten `description` and `steps` so they reflect current intended behavior
+   - convert vague acceptance points into verifiable `validation_criteria`
+   - update `files` lists only if they are materially wrong or missing key deliverables
+5. **If the plan update requires restructuring (split/merge tasks):** only do this when the user explicitly requests it, and ensure any new tasks use only schema fields and default `passes: false`.
+
 ## Notes (common sources of false positives)
 
 - “Builds / returns true / prints logs” is not completion: verify core semantics (e.g., real connectivity graph built)
