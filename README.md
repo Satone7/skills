@@ -15,6 +15,17 @@ A structured planning tool that generates machine-readable task lists for softwa
 - Generates machine-readable task lists
 - Integrates with task management systems
 
+### find-next-task
+
+Find the next executable task from `writing-plans-plus` compatible JSON plan files.
+
+**Use case:** When you want to continue execution from a structured plan and need to identify the next ready task, including dependency handling.
+
+**Key features:**
+- Locates candidate plan files and calculates progress
+- Selects the next ready task based on `passes` and `depends_on`
+- Outputs a machine-readable JSON result suitable for automation
+
 ## Installation
 
 ### Claude Code
@@ -39,6 +50,7 @@ A structured planning tool that generates machine-readable task lists for softwa
 3. 安装所需的 skill：
    ```
    /plugin install writing-plans-plus@satone-skills
+   /plugin install find-next-task@satone-skills
    ```
 
 #### 方法2：手动安装
@@ -48,6 +60,7 @@ A structured planning tool that generates machine-readable task lists for softwa
 ```bash
 mkdir -p ~/.claude/skills/
 cp -r /path/to/this/repo/plugins/writing-plans-plus ~/.claude/skills/
+cp -r /path/to/this/repo/plugins/find-next-task ~/.claude/skills/
 ```
 
 ### OpenClaw
@@ -72,6 +85,7 @@ cp -r /path/to/this/repo/plugins/writing-plans-plus ~/.claude/skills/
 3. 安装所需的 skill：
    ```
    /plugin install writing-plans-plus@satone-skills
+   /plugin install find-next-task@satone-skills
    ```
 
 #### 方法2：手动安装
@@ -81,6 +95,7 @@ cp -r /path/to/this/repo/plugins/writing-plans-plus ~/.claude/skills/
 ```bash
 mkdir -p ~/.openclaw/skills/
 cp -r /path/to/this/repo/plugins/writing-plans-plus ~/.openclaw/skills/
+cp -r /path/to/this/repo/plugins/find-next-task ~/.openclaw/skills/
 ```
 
 ## Repository Structure
@@ -90,11 +105,17 @@ skills/
 ├── .claude-plugin/
 │   └── marketplace.json     # Marketplace definition
 ├── plugins/
-│   └── writing-plans-plus/
+│   ├── writing-plans-plus/
+│   │   ├── .claude-plugin/
+│   │   │   └── plugin.json  # Plugin manifest
+│   │   └── skills/
+│   │       └── writing-plans-plus/
+│   │           └── SKILL.md  # Skill definition
+│   └── find-next-task/
 │       ├── .claude-plugin/
 │       │   └── plugin.json  # Plugin manifest
 │       └── skills/
-│           └── writing-plans-plus/
+│           └── find-next-task/
 │               └── SKILL.md  # Skill definition
 └── README.md
 ```

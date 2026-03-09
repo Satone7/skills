@@ -5,19 +5,43 @@
       "id": 1,
       "prompt": "Find the next task to work on in this project",
       "expected_output": "Finds the example-plan.json and identifies Task 2 as the next executable task",
-      "files": ["/root/wsp/skills/plugins/find-next-task/evals/example-plan.json"]
+      "files": ["plugins/find-next-task/evals/example-plan.json"]
     },
     {
       "id": 2,
       "prompt": "What should I work on next?",
       "expected_output": "Locates the plan file and outputs the next task in JSON format",
-      "files": ["/root/wsp/skills/plugins/find-next-task/evals/example-plan.json"]
+      "files": ["plugins/find-next-task/evals/example-plan.json"]
     },
     {
       "id": 3,
       "prompt": "Show me the pending tasks",
       "expected_output": "Displays task summary and identifies which tasks are ready",
-      "files": ["/root/wsp/skills/plugins/find-next-task/evals/example-plan.json"]
+      "files": ["plugins/find-next-task/evals/example-plan.json"]
+    },
+    {
+      "id": 4,
+      "prompt": "I have multiple plans in this repo. Which one should I work on?",
+      "expected_output": "Returns JSON with selection_required true and includes plan_candidates with progress for each candidate plan",
+      "files": [
+        "plugins/find-next-task/evals/example-plan.json",
+        "plugins/find-next-task/evals/example-plan-multiple.json"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Nothing seems ready in this plan. Explain why in the JSON fields.",
+      "expected_output": "Returns JSON with next_task null and includes blocked reasons in task_summary; cycle_detected should be true for the cycle tasks and missing dependencies should appear in warnings",
+      "files": ["plugins/find-next-task/evals/example-plan-blocked.json"]
+    },
+    {
+      "id": 6,
+      "prompt": "Find the next task, but gracefully handle invalid plan files if present.",
+      "expected_output": "Skips invalid schema plans with a warning and still returns the next_task from the valid plan in JSON-only output",
+      "files": [
+        "plugins/find-next-task/evals/example-plan-invalid.json",
+        "plugins/find-next-task/evals/example-plan.json"
+      ]
     }
   ]
 }

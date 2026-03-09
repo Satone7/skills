@@ -1,0 +1,32 @@
+{
+  "project": "Example Project (Blocked/Cycle)",
+  "description": "A plan designed to exercise blocked tasks, missing dependencies, and cycles",
+  "goal": "Ensure the skill reports blocked reasons and cycle detection fields",
+  "created_at": "2024-01-15",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Cycle A",
+      "description": "Part of a dependency cycle",
+      "steps": ["Do A"],
+      "passes": false,
+      "depends_on": [2]
+    },
+    {
+      "id": 2,
+      "title": "Cycle B",
+      "description": "Part of a dependency cycle",
+      "steps": ["Do B"],
+      "passes": false,
+      "depends_on": [1]
+    },
+    {
+      "id": 3,
+      "title": "Missing Dependency",
+      "description": "Depends on a task ID that does not exist",
+      "steps": ["Try to do work"],
+      "passes": false,
+      "depends_on": [999]
+    }
+  ]
+}

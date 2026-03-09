@@ -69,17 +69,16 @@ Read this file **only when the user explicitly requests a Markdown plan document
 **Description:** Configure project dependencies and environment
 
 **Files:**
-- Create: `.env.local`
+- Create: `.env.example`
 - Modify: `package.json`
 
 **Steps:**
 1. Install Supabase packages: `@supabase/supabase-js`, `@supabase/ssr`
-2. Create `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-3. Add `SUPABASE_SERVICE_ROLE_KEY` for server operations
+2. Create `.env.example` with placeholder values (do not commit real secrets)
 
 **Validation Criteria:**
 - [ ] All packages installed without errors
-- [ ] Environment variables are accessible in application
+- [ ] Environment variable placeholders are documented
 - [ ] Can initialize Supabase client
 
 ---

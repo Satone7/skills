@@ -13,7 +13,7 @@ This skill extends `superpowers:writing-plans` with **structured task definition
 - Structured task format (JSON/YAML compatible)
 - Required fields for each task (id, title, description, steps, passes)
 - Explicit completion tracking via `passes` field
-- Validation criteria for each task
+- Support for validation criteria per task (strongly recommended)
 
 **Announce at start:** "I'm using the writing-plans-plus skill to create a structured implementation plan."
 
@@ -25,9 +25,23 @@ This skill extends `superpowers:writing-plans` with **structured task definition
 
 ---
 
+## Compatibility and Dependencies
+
+This skill references other skills in the `superpowers:*` ecosystem.
+
+- If `superpowers:writing-plans` is available, read and follow it first.
+- If it is not available, proceed anyway and apply these principles directly:
+  - Keep tasks small and verifiable
+  - Use exact file paths
+  - Prefer objective validation steps before marking tasks complete
+
+This repository does not bundle `superpowers:*` skills. Install them separately if you want the full workflow.
+
+---
+
 ## Required Reading First
 
-**You MUST read and follow `superpowers:writing-plans` SKILL first.**
+If `superpowers:writing-plans` is available, read and follow it first.
 
 This skill builds on top of writing-plans - all principles from that skill apply:
 - Bite-sized tasks (2-5 minutes each)
@@ -60,7 +74,7 @@ Each task MUST be defined with the following fields:
 |-------|------|-------------|
 | `files` | object | Files to create/modify: `{ create: [...], modify: [...], test: [...] }` |
 | `depends_on` | array<number/string> | IDs of tasks that must complete before this one |
-| `validation_criteria` | array<string> | Specific criteria to verify task completion |
+| `validation_criteria` | array<string> | Specific criteria to verify task completion (strongly recommended) |
 | `skills` | array<string> | Skills the executing agent should load (see [Recommended Skills](#recommended-skills) below; default: `["using-superpowers"]`) |
 | `issue` | array<string> | **Cross-validation issues**: List of problems found during task review (see [Task Cross-Validation Protocol](#task-cross-validation-protocol)) |
 | `completed_at` | string | ISO timestamp when task was completed |
@@ -125,17 +139,16 @@ Each task MUST be defined with the following fields:
       "description": "Configure project dependencies and environment",
       "steps": [
         "Install Supabase packages: @supabase/supabase-js, @supabase/ssr",
-        "Create .env.local with NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY",
-        "Add SUPABASE_SERVICE_ROLE_KEY for server operations"
+        "Create .env.example with placeholder values (do not commit real secrets)"
       ],
       "passes": false,
       "files": {
-        "create": [".env.local"],
+        "create": [".env.example"],
         "modify": ["package.json"]
       },
       "validation_criteria": [
         "All packages installed without errors",
-        "Environment variables are accessible in application",
+        "Environment variable placeholders are documented",
         "Can initialize Supabase client"
       ],
       "skills": ["using-superpowers"]
@@ -363,7 +376,7 @@ Before marking any plan complete, verify:
 - [ ] Task IDs are unique and sequential
 - [ ] File paths use exact relative paths
 - [ ] Steps are specific and verifiable
-- [ ] Validation criteria are objective (pass/fail)
+- [ ] If present, validation criteria are objective (pass/fail)
 - [ ] JSON output is saved
 
 ### Cross-Validation Checklist
@@ -399,7 +412,7 @@ When this plan is executed via `superpowers:executing-plans`:
 | Task format | Markdown free-form | Structured with required fields |
 | Completion tracking | Implicit | Explicit via `passes` field |
 | Machine readable | No | Yes (JSON output) |
-| Validation criteria | Optional | Required |
+| Validation criteria | Optional | Strongly recommended |
 | File outputs | `.md` only | `.json` (default), `.md` (optional on request) |
 | Dependencies | Implied | Explicit via `depends_on` |
 | Skill guidance | No | Explicit via `skills` field |

@@ -20,16 +20,21 @@ First, verify that the project has compatible plan files:
 1. **Look for plan files** in this priority order:
    - `docs/plans/*.json`
    - `*.json` (project root)
-   - `**/*.json` (full project search, filter for files containing `tasks` array)
+   - `**/*.json` (full project search) ONLY if the user explicitly asks for exhaustive search or the repo is known to be small
+
+   If you do a full project search, apply safety limits:
+   - Stop after finding 50 candidate JSON files
+   - Skip JSON files larger than ~1MB
+   - Prefer reading just enough to confirm a top-level `tasks` array exists before fully parsing
 
 2. **Validate writing-plans-plus format** for each candidate file:
    - Must have a top-level `tasks` array
    - Each task must have: `id`, `title`, `description`, `steps`, `passes`
    - The `passes` field must be boolean (true/false)
+   - If a candidate file is invalid JSON, skip it and record a warning
 
 3. **If no valid plan files found:**
-   - Announce: "No writing-plans-plus compatible plan files found in this project."
-   - Do NOT proceed further - this skill is not applicable.
+   - Output a JSON object with an `error` field and stop.
 
 ---
 
@@ -61,24 +66,14 @@ Check if plan filenames have obvious sequential patterns:
    - Use that plan
 
 2. **If no obvious order AND multiple in-progress/not-started plans:**
-   - Present the list to the user with progress percentages
-   - Let the user select which plan to work on
-   - Format:
-     ```
-     Found multiple plans with pending tasks:
-     1. phase1-setup.json (5/10 tasks completed, 50%)
-     2. phase2-core.json (0/15 tasks completed, 0%)
-     3. phase3-testing.json (0/8 tasks completed, 0%)
-
-     Which plan would you like to work on?
-     ```
+   - Output JSON with `selection_required: true` and include candidates with progress
+   - Do NOT output prose outside JSON
 
 3. **If only one plan has pending tasks:**
    - Automatically select that plan
 
 4. **If all plans are completed:**
-   - Announce: "All plans are completed!"
-   - Show summary of all plans and their completion status
+   - Output JSON with `next_task: null` and a completed summary
 
 ---
 
@@ -105,28 +100,23 @@ A task is **ready** if:
      - Verify its `passes` is `true`
    - If no `depends_on` field or empty array, this condition is automatically satisfied
 
+If a dependency ID is missing from the plan, treat the task as not ready and record it as blocked by missing dependencies in the output.
+
 ### Find the Next Task
 
 1. **Iterate through tasks in ID order**
 2. **Find the FIRST task that is ready** (as defined above)
 3. **If no tasks are ready but some are incomplete:**
    - This means there are tasks waiting on dependencies
-   - Show a summary of which tasks are blocked and by what
-   - Example:
-     ```
-     No tasks are ready to execute yet.
-     Blocked tasks:
-     - Task 2: "Database Setup" (depends on Task 1 which is not completed)
-     - Task 3: "API Implementation" (depends on Task 2 which is not completed)
-     ```
+   - Output a JSON object with `next_task: null` and include blocked reasons in `task_summary`
+   - If you detect a circular dependency, set `cycle_detected: true` and include a best-effort list of tasks involved
 
 ---
 
 ## Step 3: Output the Result
 
 ### Output Format
-
-**Always output JSON format** as specified by the user. The output should be a JSON object with this structure:
+Always output a single JSON object and nothing else (no prose, no markdown fences). Use this structure:
 
 ```json
 {
@@ -137,6 +127,11 @@ A task is **ready** if:
     "total": 10,
     "percentage": 30
   },
+  "selection_required": false,
+  "plan_candidates": null,
+  "cycle_detected": false,
+  "warnings": [],
+  "error": null,
   "next_task": {
     "id": 4,
     "title": "Login Page Implementation",
@@ -172,11 +167,53 @@ A task is **ready** if:
 }
 ```
 
+### Error and Warning Schemas
+
+Use stable, machine-parseable structures:
+
+```json
+{
+  "error": {
+    "code": "NO_PLAN_FOUND",
+    "message": "No writing-plans-plus compatible plan files found.",
+    "details": {
+      "searched": ["docs/plans/*.json", "*.json"]
+    }
+  },
+  "warnings": [
+    {
+      "code": "INVALID_JSON_SKIPPED",
+      "message": "Skipped invalid JSON candidate plan.",
+      "file": "docs/plans/bad.json"
+    }
+  ]
+}
+```
+
+- `error` MUST be either null or an object: `{ code, message, details? }`
+- `warnings` MUST be an array of objects: `{ code, message, file? }`
+
+Recommended `error.code` values:
+- `NO_PLAN_FOUND`
+- `PLAN_SELECTION_REQUIRED`
+- `PLAN_PARSE_FAILED`
+- `PLAN_SCHEMA_INVALID`
+
+Recommended `warnings[].code` values:
+- `INVALID_JSON_SKIPPED`
+- `PLAN_SCHEMA_INVALID_SKIPPED`
+- `MISSING_DEPENDENCY`
+- `CYCLE_DETECTED`
+
 ### Field Explanations
 
 - **plan_file**: Absolute path to the selected plan JSON file
 - **plan_name**: The project name or description from the plan
 - **plan_progress**: Statistics about overall plan completion
+- **selection_required**: If true, `next_task` must be null and `plan_candidates` must be present
+- **plan_candidates**: Array of candidate plans when selection is required, otherwise null
+- **warnings**: Non-fatal issues encountered (invalid JSON candidates skipped, missing dependency IDs, etc.)
+- **error**: Fatal error object or null
 - **next_task**: The full task object of the next ready task (or null if none)
 - **task_summary**: Brief status of all tasks in the plan
 
@@ -186,47 +223,13 @@ When outputting `next_task`, include ALL fields present in the original task, no
 
 ---
 
-## Step 4: Present the Result to User
-
-After outputting the JSON, also provide a human-readable summary:
-
-```
-Found next task!
-
-📋 Plan: User Authentication Implementation (3/10 tasks, 30%)
-
-🎯 Next Task: #4 - Login Page Implementation
-   Description: Create the login page with email/password form and validation
-
-📝 Steps:
-   1. Create login page component
-   2. Add form validation
-   3. Connect to Supabase auth
-   4. Add error handling
-
-✅ Validation Criteria:
-   - Login form renders without errors
-   - Email validation works correctly
-   - Successful login redirects to dashboard
-   - Error messages are displayed properly
-
-[JSON output shown above]
-```
-
----
-
 ## Special Cases
 
 ### Tasks with Issues
 
 If a task has an `issue` field (array of strings):
 - Include it in the JSON output
-- In the human-readable summary, highlight it:
-  ```
-  ⚠️ This task has issues that need to be fixed:
-     - No unit tests for login form
-     - Error handling doesn't cover network failures
-  ```
+- Include it as-is in `next_task.issue` and/or enrich the corresponding entry in `task_summary` with `issues` for visibility
 - Still treat it as a normal task (follow user's instruction: "按正常顺序处理")
 
 ### Multiple Ready Tasks
@@ -247,6 +250,4 @@ Before outputting the result, verify:
 - [ ] Correctly identified task readiness (passes: false AND dependencies satisfied)
 - [ ] Output is valid JSON with all required fields
 - [ ] Included ALL task fields from the original plan
-- [ ] Also provided a human-readable summary
-
-**Remember:** Output JSON FIRST, then the human-readable summary.
+- [ ] Output contains no extra prose outside the JSON object

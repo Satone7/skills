@@ -1,0 +1,14 @@
+{
+  "project": "Example Project (Invalid Schema)",
+  "description": "Valid JSON but invalid writing-plans-plus schema for negative testing",
+  "goal": "Ensure schema validation rejects this plan and returns a structured error",
+  "created_at": "2024-01-15",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Invalid Task",
+      "description": "passes is not boolean and steps is missing",
+      "passes": "false"
+    }
+  ]
+}

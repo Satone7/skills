@@ -1,0 +1,23 @@
+{
+  "project": "Example Project (Secondary Plan)",
+  "description": "A second plan file to test multi-plan selection behavior",
+  "goal": "Validate plan selection and JSON-only output",
+  "created_at": "2024-01-15",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Secondary Setup",
+      "description": "Set up secondary plan prerequisites",
+      "steps": ["Do secondary setup"],
+      "passes": false
+    },
+    {
+      "id": 2,
+      "title": "Secondary Implementation",
+      "description": "Implement secondary plan core",
+      "steps": ["Do secondary implementation"],
+      "passes": false,
+      "depends_on": [1]
+    }
+  ]
+}
