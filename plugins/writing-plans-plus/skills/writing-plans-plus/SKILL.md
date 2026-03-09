@@ -81,6 +81,14 @@ Each task MUST be defined with the following fields:
 | `completed_by` | string | Who completed the task |
 | `notes` | string | Additional notes about completion. If `passes` is changed from `true` to `false`, do NOT describe problems in `notes`—use `issue` (you may preserve prior completion notes for audit trail) |
 
+### Schema Compliance Rules
+
+- Do NOT add extra fields beyond the schema above (e.g., `status`, `superseded_by`, `audit`, `gaps`, `risk`, `review`).
+- If `issue` is present, then `passes` MUST be `false`.
+- If `passes` is `true`, then `issue` MUST NOT be present.
+- When changing `passes` from `true` to `false`, problems MUST be described in `issue` (non-empty); do not use `notes` to describe problems.
+- When changing `passes` from `false` to `true`, remove `issue` entirely (do not keep it with an empty array).
+
 ---
 
 ## Example Structured Task

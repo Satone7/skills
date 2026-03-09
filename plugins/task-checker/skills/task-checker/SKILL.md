@@ -224,10 +224,11 @@ Only output if clear plan drift/mismatch is found:
 
 If the user instructs you to update the plan JSON file based on your audit, you must:
 
+0. **Separate audit vs patch:** keep your audit verdicts (Completed/Partial/Not Done, superseded, drifted) in the audit report. Do NOT serialize audit-only concepts into the plan JSON via new fields.
 1. **Update only the existing plan JSON file** at the provided path (no new fields, no new formats).
 2. **Strictly follow the `writing-plans-plus` schema** for all edits:
    - Do NOT introduce any field names outside the schema (no audit-only metadata like `status`, `gaps`, `risk`, `review`, etc.).
-   - You may add or edit only schema fields (e.g., `title`, `description`, `steps`, `files`, `depends_on`, `validation_criteria`, `passes`, `issue`, `completed_at`, `completed_by`, `notes`).
+   - Allowed task fields are limited to: `id`, `title`, `description`, `steps`, `passes`, `files`, `depends_on`, `validation_criteria`, `skills`, `issue`, `completed_at`, `completed_by`, `notes`.
 3. **When downgrading completion:** if a task currently has `passes: true` but your audit concludes it is not actually complete (Partial / Not Done), then:
    - Set `passes: false`
    - Add `issue`: a **non-empty** array of strings describing the concrete problems you found
@@ -237,7 +238,18 @@ If the user instructs you to update the plan JSON file based on your audit, you 
    - tighten `description` and `steps` so they reflect current intended behavior
    - convert vague acceptance points into verifiable `validation_criteria`
    - update `files` lists only if they are materially wrong or missing key deliverables
-5. **If the plan update requires restructuring (split/merge tasks):** only do this when the user explicitly requests it, and ensure any new tasks use only schema fields and default `passes: false`.
+5. **Issue/passes invariants (must hold after edits):**
+   - If `issue` is present, `passes` MUST be `false`
+   - If `passes` is `true`, `issue` MUST NOT be present
+6. **Superseded/partial handling:** represent “superseded” or “partial” only using schema fields:
+   - Set `passes: false`
+   - Put the concrete reasons in `issue`
+   - If helpful, annotate `title`/`description` text, but do NOT add new fields
+7. **Pre-save self-check (required):** before saving the updated plan JSON:
+   - remove any non-schema fields you accidentally added
+   - verify there is no task with `issue` + `passes: true`
+   - verify there is no task with `passes: true` + `issue`
+8. **If the plan update requires restructuring (split/merge tasks):** only do this when the user explicitly requests it, and ensure any new tasks use only schema fields and default `passes: false`.
 
 ## Notes (common sources of false positives)
 
