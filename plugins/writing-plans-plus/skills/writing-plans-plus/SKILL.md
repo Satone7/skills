@@ -1,6 +1,6 @@
 ---
 name: writing-plans-plus
-description: Enhanced planning with structured, machine-readable task format based on writing-plans
+description: Enhanced planning with structured, machine-readable task format based on writing-plans. Use this skill whenever you need to create implementation plans with explicit completion tracking, cross-validation issue tracking, or machine-readable JSON output. Always use this when planning software development tasks, especially when tasks need to be executed by other agents or reviewed later.
 ---
 
 # Writing Plans Plus
@@ -21,7 +21,7 @@ This skill extends `superpowers:writing-plans` with **structured task definition
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.json`
 
-**Note:** Only save `.md` file when user explicitly requests a human-readable plan document. Default to JSON-only.
+**Note:** Only save `.md` file when user explicitly requests a human-readable plan document. Default to JSON-only. When Markdown format is requested, read `references/markdown-format.md` for format requirements and examples.
 
 ---
 
@@ -61,42 +61,17 @@ Each task MUST be defined with the following fields:
 | `files` | object | Files to create/modify: `{ create: [...], modify: [...], test: [...] }` |
 | `depends_on` | array<number/string> | IDs of tasks that must complete before this one |
 | `validation_criteria` | array<string> | Specific criteria to verify task completion |
-| `estimated_time` | string | Estimated time (e.g., "10m", "1h") |
-| `tags` | array<string> | Categories (e.g., ["api", "ui", "test"]) |
+| `skills` | array<string> | Skills the executing agent should load (see [Recommended Skills](#recommended-skills) below; default: `["using-superpowers"]`) |
+| `issue` | array<string> | **Cross-validation issues**: List of problems found during task review (see [Task Cross-Validation Protocol](#task-cross-validation-protocol)) |
+| `completed_at` | string | ISO timestamp when task was completed |
+| `completed_by` | string | Who completed the task |
+| `notes` | string | Additional notes about completion |
 
 ---
 
 ## Example Structured Task
 
-### Markdown Format (Human-Readable)
-
-```markdown
-### Task 3: Supabase Client Setup
-
-**ID:** 3
-**Title:** Supabase Client Setup
-**Description:** Create server-side and client-side Supabase clients with proper middleware
-
-**Files:**
-- Create: `lib/supabase/server.ts`
-- Create: `lib/supabase/client.ts`
-- Create: `lib/supabase/middleware.ts`
-
-**Steps:**
-1. Create server client with service role
-2. Create browser client for components
-3. Create middleware for session refresh
-4. Update root middleware.ts to use Supabase middleware
-
-**Validation Criteria:**
-- [ ] Server client can query database
-- [ ] Browser client initializes without errors
-- [ ] Middleware refreshes expired sessions
-
-**Status:** ⬜ Not Started | Passes: `false`
-```
-
-### JSON Format (Machine-Readable)
+### JSON Format (Machine-Readable, Recommended)
 
 ```json
 {
@@ -125,8 +100,7 @@ Each task MUST be defined with the following fields:
     "Browser client initializes without errors",
     "Middleware refreshes expired sessions"
   ],
-  "estimated_time": "20m",
-  "tags": ["setup", "supabase", "auth"]
+  "skills": ["using-superpowers", "test-driven-development"]
 }
 ```
 
@@ -134,66 +108,7 @@ Each task MUST be defined with the following fields:
 
 ## Complete Plan Example
 
-### Markdown Output: `docs/plans/2024-01-15-user-auth.md`
-
-```markdown
-# User Authentication Implementation Plan
-
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-> **Task Format:** Structured (writing-plans-plus)
-
-**Goal:** Implement complete user authentication with email/password using Supabase
-
-**Architecture:** Use Supabase Auth with server-side sessions. Create reusable auth components and protect routes via middleware.
-
-**Tech Stack:** Next.js 14, Supabase Auth, TypeScript, Tailwind CSS
-
----
-
-## Task Summary
-
-| ID | Title | Status | Passes |
-|----|-------|--------|--------|
-| 1 | Project Setup | Not Started | false |
-| 2 | Database Schema | Not Started | false |
-| 3 | Supabase Client Setup | Not Started | false |
-| 4 | Login Page | Not Started | false |
-| 5 | Register Page | Not Started | false |
-| 6 | Logout Function | Not Started | false |
-| 7 | Auth Middleware | Not Started | false |
-
----
-
-### Task 1: Project Setup
-
-**ID:** 1 | **Status:** ⬜ Not Started | **Passes:** `false`
-
-**Description:** Configure project dependencies and environment
-
-**Files:**
-- Create: `.env.local`
-- Modify: `package.json`
-
-**Steps:**
-1. Install Supabase packages: `@supabase/supabase-js`, `@supabase/ssr`
-2. Create `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-3. Add `SUPABASE_SERVICE_ROLE_KEY` for server operations
-
-**Validation Criteria:**
-- [ ] All packages installed without errors
-- [ ] Environment variables are accessible in application
-- [ ] Can initialize Supabase client
-
----
-
-### Task 2: Database Schema
-
-**ID:** 2 | **Status:** ⬜ Not Started | **Passes:** `false`
-
-... (additional tasks)
-```
-
-### JSON Output: `docs/plans/2024-01-15-user-auth.json`
+### JSON Output (Default): `docs/plans/2024-01-15-user-auth.json`
 
 ```json
 {
@@ -223,8 +138,7 @@ Each task MUST be defined with the following fields:
         "Environment variables are accessible in application",
         "Can initialize Supabase client"
       ],
-      "estimated_time": "10m",
-      "tags": ["setup", "dependencies"]
+      "skills": ["using-superpowers"]
     }
     ... (additional tasks)
   ]
@@ -249,10 +163,194 @@ When updating task status during execution:
    }
    ```
 
-4. **Markdown only when requested:** If `.md` file exists (user requested it), keep it in sync with JSON
-   ```markdown
-   **ID:** 1 | **Status:** ✅ Completed | **Passes:** `true`
-   ```
+4. **Markdown only when requested:** If `.md` file exists (user requested it), keep it in sync with JSON. See `references/markdown-format.md` for Markdown format examples.
+
+---
+
+## Task Cross-Validation Protocol
+
+When reviewing a task that was previously marked as completed (`passes: true`), you must validate the implementation and update the task status if issues are found.
+
+### When to Perform Cross-Validation
+
+Cross-validation should be performed:
+- After task execution but before claiming completion
+- When reviewing another agent's work
+- When resuming work on a previously completed plan
+- When verification-before-completion skill is used
+
+### Common Issues to Check For
+
+| Issue Category | Examples |
+|----------------|----------|
+| **Implementation mismatch** | Code doesn't match task description, missing functionality, incorrect approach |
+| **Test coverage** | No unit tests, tests don't cover key scenarios, tests missing assertions |
+| **Test failures** | Existing tests fail, new tests fail, flaky tests |
+| **Quality issues** | Code doesn't follow standards, missing error handling, security vulnerabilities |
+
+### When Issues Are Found
+
+If any issues are discovered during review:
+
+1. **Set `passes: false`** - Roll back the completion status
+2. **Add `issue` field** - Array of strings describing each problem found
+3. **Keep completion metadata** - Preserve `completed_at`, `completed_by` for audit trail (optional)
+4. **Update task description if needed** - If task description was ambiguous or incorrect, update it to match what should have been implemented
+
+**Example: Task with issues found during review**
+```json
+{
+  "id": 3,
+  "title": "Supabase Client Setup",
+  "description": "Create server-side and client-side Supabase clients with proper middleware",
+  "steps": [
+    "Create server client with service role",
+    "Create browser client for components",
+    "Create middleware for session refresh",
+    "Update root middleware.ts to use Supabase middleware"
+  ],
+  "passes": false,
+  "issue": [
+    "No unit tests for client initialization",
+    "Middleware doesn't handle token refresh edge cases",
+    "Server client is exposed to browser code",
+    "Tests exist but have no assertions"
+  ],
+  "files": {
+    "create": [
+      "lib/supabase/server.ts",
+      "lib/supabase/client.ts",
+      "lib/supabase/middleware.ts"
+    ],
+    "modify": [
+      "middleware.ts"
+    ]
+  },
+  "validation_criteria": [
+    "Server client can query database",
+    "Browser client initializes without errors",
+    "Middleware refreshes expired sessions"
+  ],
+  "completed_at": "2024-01-15T10:30:00Z",
+  "completed_by": "Claude",
+  "notes": "Initial implementation completed but issues found during review"
+}
+```
+
+### When Issues Are Fixed
+
+After the issues have been resolved:
+
+1. **Remove the `issue` field** - Do NOT keep it with an empty array
+2. **Set `passes: true`** - Mark the task as completed again
+3. **Update task description if necessary** - Ensure description matches the actual implementation
+4. **Update completion metadata** - Set new `completed_at` and `completed_by`
+5. **Add notes about the fix** - Document what was changed
+
+**Example: Task after issues are fixed**
+```json
+{
+  "id": 3,
+  "title": "Supabase Client Setup",
+  "description": "Create server-side and client-side Supabase clients with proper middleware and test coverage",
+  "steps": [
+    "Create server client with service role",
+    "Create browser client for components",
+    "Create middleware for session refresh",
+    "Update root middleware.ts to use Supabase middleware",
+    "Add unit tests for all clients and middleware"
+  ],
+  "passes": true,
+  "files": {
+    "create": [
+      "lib/supabase/server.ts",
+      "lib/supabase/client.ts",
+      "lib/supabase/middleware.ts",
+      "lib/supabase/server.test.ts",
+      "lib/supabase/client.test.ts",
+      "lib/supabase/middleware.test.ts"
+    ],
+    "modify": [
+      "middleware.ts"
+    ]
+  },
+  "validation_criteria": [
+    "Server client can query database",
+    "Browser client initializes without errors",
+    "Middleware refreshes expired sessions",
+    "All unit tests pass with meaningful assertions"
+  ],
+  "completed_at": "2024-01-15T14:45:00Z",
+  "completed_by": "Claude",
+  "notes": "Fixed issues: Added comprehensive tests, secured server client, improved middleware error handling"
+}
+```
+
+---
+
+## Recommended Skills
+
+When specifying the `skills` field, use this guide to select appropriate skills. When in doubt, use `["using-superpowers"]`.
+
+### Core Skills
+
+| Skill | Description | When to Use |
+|-------|-------------|-------------|
+| `using-superpowers` | Foundation skill that establishes skill usage workflow | **Always include this first** - it's the base for all other skills |
+| `brainstorming` | Explore requirements and design before implementation | Tasks involving creative work, new features, or complex changes |
+| `writing-plans` | Create implementation plans | Planning tasks, or when writing-plans-plus isn't available |
+| `executing-plans` | Execute written plans task-by-task | When this plan is being executed step-by-step |
+| `subagent-driven-development` | Execute independent tasks in parallel | Plans with multiple independent tasks that can run concurrently |
+
+### Development Skills
+
+| Skill | Description | When to Use |
+|-------|-------------|-------------|
+| `test-driven-development` | Write tests before implementation code | Any task involving code changes - especially new features |
+| `systematic-debugging` | Debug issues systematically | Tasks involving bug fixes or investigating unexpected behavior |
+| `verification-before-completion` | Verify work before claiming completion | Final review tasks, or when quality assurance is critical |
+
+### Code Quality & Review
+
+| Skill | Description | When to Use |
+|-------|-------------|-------------|
+| `requesting-code-review` | Request review before merging | Completing major features or changes that need review |
+| `receiving-code-review` | Process review feedback rigorously | When implementing code review suggestions |
+| `simplify` | Review and improve code quality | Refactoring tasks or code cleanup |
+
+### Git & Workflow
+
+| Skill | Description | When to Use |
+|-------|-------------|-------------|
+| `using-git-worktrees` | Create isolated worktrees for feature work | Starting new feature development that needs isolation |
+| `finishing-a-development-branch` | Complete and integrate work | When implementation is complete and ready for merge |
+
+### Skill Development
+
+| Skill | Description | When to Use |
+|-------|-------------|-------------|
+| `skill-creator` | Create and improve skills | Tasks involving skill creation or modification |
+| `writing-skills` | Verify skills work before deployment | When creating or updating skills |
+
+### Example Usage
+
+```json
+{
+  "skills": ["using-superpowers", "test-driven-development"]
+}
+```
+
+```json
+{
+  "skills": ["using-superpowers", "brainstorming", "writing-plans-plus"]
+}
+```
+
+```json
+{
+  "skills": ["using-superpowers", "systematic-debugging", "verification-before-completion"]
+}
+```
 
 ---
 
@@ -267,6 +365,18 @@ Before marking any plan complete, verify:
 - [ ] Steps are specific and verifiable
 - [ ] Validation criteria are objective (pass/fail)
 - [ ] JSON output is saved
+
+### Cross-Validation Checklist
+
+When reviewing completed tasks:
+
+- [ ] Implementation matches task description
+- [ ] Tests exist and cover key scenarios
+- [ ] All tests pass
+- [ ] Tests have meaningful assertions (not just empty tests)
+- [ ] If issues found: `passes` is `false` AND `issue` array exists with clear descriptions
+- [ ] If issues fixed: `issue` field is REMOVED (not empty array) AND `passes` is `true`
+- [ ] Task description updated if implementation differs from original plan
 
 ---
 
@@ -292,6 +402,9 @@ When this plan is executed via `superpowers:executing-plans`:
 | Validation criteria | Optional | Required |
 | File outputs | `.md` only | `.json` (default), `.md` (optional on request) |
 | Dependencies | Implied | Explicit via `depends_on` |
+| Skill guidance | No | Explicit via `skills` field |
+| Issue tracking | No | Explicit via `issue` field for cross-validation |
+| Audit trail | No | `completed_at`, `completed_by` for completion history |
 
 ---
 

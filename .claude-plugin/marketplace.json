@@ -10,7 +10,7 @@
     {
       "name": "writing-plans-plus",
       "source": "./plugins/writing-plans-plus",
-      "description": "Enhanced planning with structured, machine-readable task format based on writing-plans"
+      "description": "Enhanced planning with structured, machine-readable task format based on writing-plans. Use this skill whenever you need to create implementation plans with explicit completion tracking, cross-validation issue tracking, or machine-readable JSON output. Always use this when planning software development tasks, especially when tasks need to be executed by other agents or reviewed later."
     }
   ]
 }
