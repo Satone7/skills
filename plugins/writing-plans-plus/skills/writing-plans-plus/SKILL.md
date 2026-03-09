@@ -75,7 +75,7 @@ Each task MUST be defined with the following fields:
 | `files` | object | Files to create/modify: `{ create: [...], modify: [...], test: [...] }` |
 | `depends_on` | array<number/string> | IDs of tasks that must complete before this one |
 | `validation_criteria` | array<string> | Specific criteria to verify task completion (strongly recommended) |
-| `skills` | array<string> | Skills the executing agent should load (see [Recommended Skills](#recommended-skills) below; default: `["using-superpowers"]`) |
+| `skills` | array<string> | Skills the executing agent should load (see [Recommended Skills](#recommended-skills) below; default: `["executing-single-task"]`) |
 | `issue` | array<string> | **Cross-validation issues**: List of problems found during task review (see [Task Cross-Validation Protocol](#task-cross-validation-protocol)) |
 | `completed_at` | string | ISO timestamp when task was completed |
 | `completed_by` | string | Who completed the task |
@@ -114,7 +114,7 @@ Each task MUST be defined with the following fields:
     "Browser client initializes without errors",
     "Middleware refreshes expired sessions"
   ],
-  "skills": ["using-superpowers", "test-driven-development"]
+  "skills": ["executing-single-task", "test-driven-development"]
 }
 ```
 
@@ -151,7 +151,7 @@ Each task MUST be defined with the following fields:
         "Environment variable placeholders are documented",
         "Can initialize Supabase client"
       ],
-      "skills": ["using-superpowers"]
+      "skills": ["executing-single-task"]
     }
     ... (additional tasks)
   ]
@@ -303,65 +303,66 @@ After the issues have been resolved:
 
 ## Recommended Skills
 
-When specifying the `skills` field, use this guide to select appropriate skills. When in doubt, use `["using-superpowers"]`.
+When specifying the `skills` field, use this guide to select appropriate skills. When in doubt, use `["executing-single-task"]`.
 
 ### Core Skills
 
 | Skill | Description | When to Use |
 |-------|-------------|-------------|
-| `using-superpowers` | Foundation skill that establishes skill usage workflow | **Always include this first** - it's the base for all other skills |
-| `brainstorming` | Explore requirements and design before implementation | Tasks involving creative work, new features, or complex changes |
-| `writing-plans` | Create implementation plans | Planning tasks, or when writing-plans-plus isn't available |
-| `executing-plans` | Execute written plans task-by-task | When this plan is being executed step-by-step |
-| `subagent-driven-development` | Execute independent tasks in parallel | Plans with multiple independent tasks that can run concurrently |
+| `executing-single-task` | Execute exactly one structured task and update its status | Default choice for `tasks[].skills` when executing tasks one-by-one |
+| `using-superpowers` | Enforce skill discovery + “invoke skills before responding” protocol | At the start of a session to establish the workflow (not a per-task skill) |
+| `brainstorming` | Turn ideas into an approved design before implementation | Before any creative work (new feature, behavior change, non-trivial change) |
+| `writing-plans` | Create a detailed implementation plan before touching code | When you have requirements/spec and need a multi-step plan (pre-implementation) |
+| `executing-plans` | Execute an existing plan in batches with review checkpoints | When executing a written plan in a separate session (batch + feedback loop) |
+| `subagent-driven-development` | Execute a plan in this session using subagents + per-task reviews | When tasks are mostly independent and you want fast iteration without context switching |
+| `dispatching-parallel-agents` | Run 2+ independent investigations/threads concurrently | When you have multiple independent problem domains that can be worked in parallel |
 
 ### Development Skills
 
 | Skill | Description | When to Use |
 |-------|-------------|-------------|
-| `test-driven-development` | Write tests before implementation code | Any task involving code changes - especially new features |
-| `systematic-debugging` | Debug issues systematically | Tasks involving bug fixes or investigating unexpected behavior |
-| `verification-before-completion` | Verify work before claiming completion | Final review tasks, or when quality assurance is critical |
+| `test-driven-development` | Enforce RED → GREEN → REFACTOR workflow | Before writing implementation code for features, bugfixes, refactors, behavior changes |
+| `systematic-debugging` | Find root cause before proposing fixes | Any bug, test failure, build failure, or unexpected behavior (before fixes) |
+| `verification-before-completion` | Require evidence before any “done/fixed/passing” claim | Before marking tasks complete, committing, or creating PRs; run verification and cite output |
 
 ### Code Quality & Review
 
 | Skill | Description | When to Use |
 |-------|-------------|-------------|
-| `requesting-code-review` | Request review before merging | Completing major features or changes that need review |
-| `receiving-code-review` | Process review feedback rigorously | When implementing code review suggestions |
-| `simplify` | Review and improve code quality | Refactoring tasks or code cleanup |
+| `requesting-code-review` | Request review to catch issues early | After major tasks/features, before merging, and after each task in subagent-driven workflows |
+| `receiving-code-review` | Evaluate feedback rigorously before implementing | When you receive review feedback (especially if unclear or technically questionable) |
 
 ### Git & Workflow
 
 | Skill | Description | When to Use |
 |-------|-------------|-------------|
-| `using-git-worktrees` | Create isolated worktrees for feature work | Starting new feature development that needs isolation |
-| `finishing-a-development-branch` | Complete and integrate work | When implementation is complete and ready for merge |
+| `using-git-worktrees` | Create an isolated workspace and verify clean baseline | Before starting feature work that needs isolation, or before executing an implementation plan |
+| `finishing-a-development-branch` | Verify tests and present structured integrate/cleanup options | When implementation is complete, tests pass, and you need to merge/PR/keep/discard |
 
 ### Skill Development
 
 | Skill | Description | When to Use |
 |-------|-------------|-------------|
-| `skill-creator` | Create and improve skills | Tasks involving skill creation or modification |
-| `writing-skills` | Verify skills work before deployment | When creating or updating skills |
+| `skill-creator` | Create/modify skills and iterate with evals | When authoring or improving skills and you want a full test/eval loop |
+| `writing-skills` | Apply TDD-style methodology to skill authoring | When creating/editing/verifying skills before deployment |
 
 ### Example Usage
 
 ```json
 {
-  "skills": ["using-superpowers", "test-driven-development"]
+  "skills": ["executing-single-task", "test-driven-development"]
 }
 ```
 
 ```json
 {
-  "skills": ["using-superpowers", "brainstorming", "writing-plans-plus"]
+  "skills": ["executing-single-task", "brainstorming", "writing-plans-plus"]
 }
 ```
 
 ```json
 {
-  "skills": ["using-superpowers", "systematic-debugging", "verification-before-completion"]
+  "skills": ["executing-single-task", "systematic-debugging", "verification-before-completion"]
 }
 ```
 
