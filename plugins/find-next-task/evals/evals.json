@@ -1,0 +1,23 @@
+{
+  "skill_name": "find-next-task",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Find the next task to work on in this project",
+      "expected_output": "Finds the example-plan.json and identifies Task 2 as the next executable task",
+      "files": ["/root/wsp/skills/plugins/find-next-task/evals/example-plan.json"]
+    },
+    {
+      "id": 2,
+      "prompt": "What should I work on next?",
+      "expected_output": "Locates the plan file and outputs the next task in JSON format",
+      "files": ["/root/wsp/skills/plugins/find-next-task/evals/example-plan.json"]
+    },
+    {
+      "id": 3,
+      "prompt": "Show me the pending tasks",
+      "expected_output": "Displays task summary and identifies which tasks are ready",
+      "files": ["/root/wsp/skills/plugins/find-next-task/evals/example-plan.json"]
+    }
+  ]
+}
