@@ -1,5 +1,5 @@
 {
   "name": "find-next-task",
   "description": "Find the next executable task from writing-plans-plus JSON plan files. Use this skill whenever you need to locate the next task to work on, check task status, or understand what to do next in a project with structured plans.",
-  "version": "2.0.0"
+  "version": "2.0.1"
 }

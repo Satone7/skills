@@ -1,6 +1,7 @@
 ---
 name: find-next-task
 description: Find the next executable task from writing-plans-plus JSON plan files. Use this skill whenever you need to locate the next task to work on, check task status, or understand what to do next in a project with structured plans. Always use this when the user asks "what's next", "find the next task", "show pending tasks", or wants to continue working on a plan.
+context: fork
 ---
 
 # Find Next Task
