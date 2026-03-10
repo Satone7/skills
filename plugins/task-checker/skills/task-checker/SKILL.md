@@ -70,6 +70,9 @@ User should provide:
 - Audit depth (optional):
   - static evidence only (default): code/tests/docs/scripts
   - include local dynamic verification: run minimal necessary tests locally (ignore CI)
+- Update plan file (optional):
+  - `update_plan`: boolean (default: false) - Whether to write audit results back to plan JSON
+  - `write_mode`: "minimal" | "full" (default: "minimal") - "minimal" only updates passes/issue; "full" also adds notes
 
 ## Core Method (follow this order)
 
@@ -190,6 +193,38 @@ For each task, rate tests (Adequate / Borderline / Inadequate) and output a “m
 - specify suggested location (reuse existing test framework and directories)
 - specify assertion type (state/artifact/structure/behavior), avoid “no crash only”
 
+### 6) Write back to plan (if requested)
+
+If `update_plan: true`:
+
+1. **Load writing-plans-plus SKILL first**
+   - Invoke: `Skill: writing-plans-plus`
+   - This ensures we follow the correct schema for task updates
+
+2. **For each audited task, update JSON with ONLY these fields:**
+   - `passes`: boolean - true if Completed, false if Partial/Not Done/superseded
+   - `issue`: array<string> (only if issues found or superseded)
+     - For superseded tasks: `[“Task superseded by Task X”]`
+     - For tasks with gaps: list the specific gaps found
+   - `completed_at`: ISO timestamp (if passes: true)
+   - `completed_by`: string (if passes: true)
+   - `notes`: string (optional, summary of audit findings)
+
+3. **Fields NOT to add (avoid custom extensions):**
+   - ❌ Do NOT add: `verified`, `verification_status`, `evidence`, `verification_date`
+   - ❌ Do NOT add custom objects or nested structures
+   - ❌ Do NOT add `description_accuracy`, `superseded_by`, `superseded_reason` as top-level fields
+   - ✅ Only use standard writing-plans-plus fields
+
+4. **Superseded task handling:**
+   - Set `passes: false`
+   - Add `issue: [“Task superseded by Task X: <reason>”]`
+   - Optional in notes: “Implementation evolved to skip this intermediate step”
+
+5. **Validation before write:**
+   - Validate JSON is still valid after modifications
+   - Preserve all other existing fields (dependencies, files, etc.)
+
 ## Output Format (must follow)
 
 ### A. Overview
@@ -220,36 +255,27 @@ Only output if clear plan drift/mismatch is found:
 - which tasks/milestones should be updated or split
 - which acceptance criteria should be converted from “soft signals” to “hard evidence”
 
-### D. Apply Revisions to Plan JSON (only when user explicitly requests it)
+### D. Plan File Updates (only when `update_plan: true`)
 
-If the user instructs you to update the plan JSON file based on your audit, you must:
+- Tasks updated: <count>
+- Tasks marked completed: <count>
+- Tasks marked failed/superseded: <count>
+- Fields modified: passes, issue, completed_at, completed_by, notes (as applicable)
+- Validation: JSON schema validated against writing-plans-plus requirements
 
-0. **Separate audit vs patch:** keep your audit verdicts (Completed/Partial/Not Done, superseded, drifted) in the audit report. Do NOT serialize audit-only concepts into the plan JSON via new fields.
-1. **Update only the existing plan JSON file** at the provided path (no new fields, no new formats).
-2. **Strictly follow the `writing-plans-plus` schema** for all edits:
-   - Do NOT introduce any field names outside the schema (no audit-only metadata like `status`, `gaps`, `risk`, `review`, etc.).
-   - Allowed task fields are limited to: `id`, `title`, `description`, `steps`, `passes`, `files`, `depends_on`, `validation_criteria`, `skills`, `issue`, `completed_at`, `completed_by`, `notes`.
-3. **When downgrading completion:** if a task currently has `passes: true` but your audit concludes it is not actually complete (Partial / Not Done), then:
-   - Set `passes: false`
-   - Add `issue`: a **non-empty** array of strings describing the concrete problems you found
-   - Do NOT use `notes` to describe issues (issues belong in `issue`)
-   - Preserve any existing completion metadata (`completed_at`, `completed_by`, and prior completion `notes`) for audit trail
-4. **When fixing plan drift/mis-specification:** update only schema fields to make the task auditable:
-   - tighten `description` and `steps` so they reflect current intended behavior
-   - convert vague acceptance points into verifiable `validation_criteria`
-   - update `files` lists only if they are materially wrong or missing key deliverables
-5. **Issue/passes invariants (must hold after edits):**
-   - If `issue` is present, `passes` MUST be `false`
-   - If `passes` is `true`, `issue` MUST NOT be present
-6. **Superseded/partial handling:** represent “superseded” or “partial” only using schema fields:
-   - Set `passes: false`
-   - Put the concrete reasons in `issue`
-   - If helpful, annotate `title`/`description` text, but do NOT add new fields
-7. **Pre-save self-check (required):** before saving the updated plan JSON:
-   - remove any non-schema fields you accidentally added
-   - verify there is no task with `issue` + `passes: true`
-   - verify there is no task with `passes: true` + `issue`
-8. **If the plan update requires restructuring (split/merge tasks):** only do this when the user explicitly requests it, and ensure any new tasks use only schema fields and default `passes: false`.
+## Example Usage Patterns
+
+**Audit only (no write):**
+```
+User: “Check plan file docs/plans/phase1.json”
+→ Outputs audit report only, does NOT modify JSON
+```
+
+**Audit with write-back:**
+```
+User: “Check plan file docs/plans/phase1.json and update it”
+→ Outputs audit report AND updates JSON fields per writing-plans-plus schema
+```
 
 ## Notes (common sources of false positives)
 
