@@ -44,7 +44,8 @@ First, verify that the project has compatible plan files:
 ### List Candidate Plans
 
 For all valid plan files found:
-- Read each file's content
+- Collect candidate file paths without reading all contents at once
+- Read plan files sequentially only after ordering is determined
 - Calculate progress: (number of tasks with `passes: true`) / (total tasks)
 - Group plans into categories:
   - **In progress**: Some tasks completed, some remaining
@@ -53,27 +54,34 @@ For all valid plan files found:
 
 ### Detect Plan Ordering
 
-Check if plan filenames have obvious sequential patterns:
-- Look for: `phase1`, `phase2`, `phase3`, etc.
-- Look for: `part1`, `part2`, `step1`, `step2`, etc.
-- Look for: `v1`, `v2`, `v1.1`, `v1.2`, etc.
-- Look for numeric prefixes: `01-`, `02-`, etc.
+First, use plan filename ordering with explicit priority. Apply the following sequence rules in order of precedence:
+1. **Phase ordering**: `phase1`, `phase2`, `phase3`, etc.
+2. **Part ordering**: `part1`, `part2`, `part3`, etc.
+3. **Step ordering**: `step1`, `step2`, `step3`, etc.
+4. **Version ordering**: `v1`, `v2`, `v1.1`, `v1.2`, etc.
+5. **Numeric prefix ordering**: `01-`, `02-`, etc.
+
+If none of the above explicit ordering patterns exist in filenames, then and only then use the time order found inside the file content to order plans. Read each file one by one to extract time fields and avoid loading all plan contents in a single pass.
 
 ### Plan Selection Logic
 
-1. **If obvious sequential pattern exists:**
-   - Process plans in that order
-   - Find the first plan that is NOT fully completed
-   - Use that plan
+1. **If explicit filename ordering exists:**
+   - Process plans in that explicit order
+   - Read plans sequentially in order and stop once a not-completed plan is selected
+   - Do not load all plan contents at once
 
-2. **If no obvious order AND multiple in-progress/not-started plans:**
+2. **If no explicit filename order:**
+   - Order plans by time sequence from file content using sequential reads
+   - Then apply the same selection logic as above
+
+3. **If multiple in-progress/not-started plans remain after ordering:**
    - Output JSON with `selection_required: true` and include candidates with progress
    - Do NOT output prose outside JSON
 
-3. **If only one plan has pending tasks:**
+4. **If only one plan has pending tasks:**
    - Automatically select that plan
 
-4. **If all plans are completed:**
+5. **If all plans are completed:**
    - Output JSON with `next_task: null` and a completed summary
 
 ---
