@@ -1,0 +1,9 @@
+{
+  "name": "github-pr-fixer",
+  "version": "1.0.0",
+  "description": "Automated GitHub PR fixer that reads review feedback, implements code fixes, runs tests, and replies to reviewers until all review threads are resolved.",
+  "dependencies": {
+    "tools": ["gh"],
+    "extensions": ["gh pr-review (agynio/gh-pr-review)"]
+  }
+}

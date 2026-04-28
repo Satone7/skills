@@ -30,9 +30,10 @@ skills/
 
 ## Skills in This Repository
 
-### writing-plans-plus
-
-A structured planning tool that generates machine-readable task lists for software engineering projects. Extends `superpowers:writing-plans` with structured JSON format, explicit completion tracking via `passes` field, and validation criteria. Saves plans to `docs/plans/YYYY-MM-DD-<feature-name>.json` by default (markdown only when explicitly requested).
+- **aitc-workflow** — Multi-agent batch orchestration with Plan, Execute, Lifecycle modes
+- **github-pr-reviewer** — Automated PR review with inline comments and approve/request-changes verdict
+- **github-pr-fixer** — Automated PR fix loop that reads review feedback, implements fixes, and replies
+- **md2pdf** — Markdown to PDF conversion with CJK support (simplified, GitHub Light theme)
 
 ## Development Workflow
 

@@ -8,24 +8,24 @@
   },
   "plugins": [
     {
-      "name": "writing-plans-plus",
-      "source": "./plugins/writing-plans-plus",
-      "description": "Enhanced planning with structured, machine-readable task format based on writing-plans. Use this skill whenever you need to create implementation plans with explicit completion tracking, cross-validation issue tracking, or machine-readable JSON output. Always use this when planning software development tasks, especially when tasks need to be executed by other agents or reviewed later."
+      "name": "aitc-workflow",
+      "source": "./plugins/aitc-workflow",
+      "description": "Manually invoked workflow orchestrator for long-running multi-agent batch tasks. Provides Plan, Execute, and Lifecycle modes for team coordination and knowledge capture."
     },
     {
-      "name": "find-next-task",
-      "source": "./plugins/find-next-task",
-      "description": "Find the next executable task from writing-plans-plus JSON plan files. Use this skill whenever you need to locate the next task to work on, check task status, or understand what to do next in a project with structured plans."
+      "name": "github-pr-reviewer",
+      "source": "./plugins/github-pr-reviewer",
+      "description": "Automated GitHub PR reviewer that deep-analyzes pull requests and posts structured review feedback with inline comments, suggestions, and an approve/request-changes verdict."
     },
     {
-      "name": "executing-single-task",
-      "source": "./plugins/executing-single-task",
-      "description": "Execute exactly one writing-plans-plus task (from find-next-task output) in a low-context subagent, update the plan JSON task passes field, and create exactly one git commit for that task."
+      "name": "github-pr-fixer",
+      "source": "./plugins/github-pr-fixer",
+      "description": "Automated GitHub PR fixer that reads review feedback, implements code fixes, runs tests, and replies to reviewers until all review threads are resolved."
     },
     {
-      "name": "task-checker",
-      "source": "./plugins/task-checker",
-      "description": "Strictly audits a writing-plans-plus JSON plan for per-task completion, description accuracy, and test adequacy (ignore CI). Use whenever user asks to audit a plan, validate acceptance criteria, or request gap analysis and minimal test additions."
+      "name": "md2pdf",
+      "source": "./plugins/md2pdf",
+      "description": "Convert Markdown documents to PDF with CJK/Latin mixed text, fenced code blocks, tables, and clickable TOC. Simplified GitHub Light theme."
     }
   ]
 }

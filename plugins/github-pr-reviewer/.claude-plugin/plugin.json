@@ -1,0 +1,8 @@
+{
+  "name": "github-pr-reviewer",
+  "version": "1.0.0",
+  "description": "Automated GitHub PR reviewer that deep-analyzes pull requests and posts structured review feedback with inline comments and approve/request-changes verdict.",
+  "dependencies": {
+    "tools": ["gh"]
+  }
+}

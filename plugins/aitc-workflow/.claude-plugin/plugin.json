@@ -1,0 +1,6 @@
+{
+  "name": "aitc-workflow",
+  "version": "1.0.0",
+  "description": "Manually invoked workflow orchestrator for long-running multi-agent batch tasks. Provides Plan, Execute, and Lifecycle modes.",
+  "dependencies": {}
+}
