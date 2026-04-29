@@ -132,7 +132,7 @@ Agent(
 )
 ```
 
-The `model` field must be `opus` or `sonnet` for worker teammates (see Model Selection Policy in §2). `haiku` is reserved for the Guardian.
+The `model` field must be `opus` or `sonnet` for worker teammates (see Model Selection Policy in §2). `haiku` is reserved for the Guardian. **The model must be set as an Agent() call parameter — prompt text alone does NOT control model selection.** Writing `MODEL: sonnet` in the prompt body has no effect on which model the system assigns.
 
 Without `team_name`, the agent is a standalone subagent — invisible to the team, unreachable via SendMessage, unable to coordinate via the shared task list. Every worker must be a teammate (with `team_name`), not a subagent.
 
@@ -587,6 +587,8 @@ The plan is always the authoritative record of what happened. No completed work 
 Every teammate prompt is assembled from the following parts, in order. For the rare case where ROLE-SPLIT was approved via the §2.0.1 gate, use the role-specific variants in Part A and Part C.
 
 **Part A — Role declaration** (from plan; for ROLE-SPLIT, from the gated review's role breakdown):
+
+The `MODEL:` line in the prompt body is informational only — it tells the teammate what model it is running on, but does NOT control the actual model. The model is set by the `model=` parameter in the `Agent()` call. Both must agree: if `Agent(model="sonnet")` writes `MODEL: opus`, the teammate works with a false self-perception that can distort its judgment.
 
 Single-teammate:
 ```
