@@ -1,7 +1,8 @@
 ---
 name: aitc-workflow
 version: 1.0.0
-description: Manually invoked workflow orchestrator for long-running multi-agent batch tasks. This skill is NOT auto-triggered — the user must explicitly request it by name (e.g., "use aitc-workflow", "aitc-workflow Plan mode", or via the Skill tool). Provides three modes: Plan (generate a task plan file), Execute (orchestrate a team through the plan, capturing operational discoveries as task-level SKILLs), and Lifecycle (archive completed task SKILLs and promote reusable knowledge into project or global skills).
+description: >
+  Manually invoked workflow orchestrator for long-running multi-agent batch tasks. This skill is NOT auto-triggered — the user must explicitly request it by name (e.g., "use aitc-workflow", "aitc-workflow Plan mode", or via the Skill tool). Provides three modes: Plan (generate a task plan file), Execute (orchestrate a team through the plan, capturing operational discoveries as task-level SKILLs), and Lifecycle (archive completed task SKILLs and promote reusable knowledge into project or global skills).
 ---
 
 # AITC Workflow — Multi-Agent Batch Orchestration
