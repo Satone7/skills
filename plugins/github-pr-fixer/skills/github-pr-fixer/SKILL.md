@@ -1,17 +1,18 @@
 ---
 name: github-pr-fixer
+version: 1.2.0
 description: >
-  Automated GitHub PR fixer that reads review feedback, implements code fixes, runs tests, and
-  replies to reviewers until all review threads are resolved. Use this skill whenever the user says
+  Automated GitHub PR fixer that reads review feedback, implements code fixes, runs tests,
+  replies to reviewers, and resolves threads. Use this skill whenever the user says
   "fix PR review", "address review comments", "/github-pr-fixer", "respond to PR feedback",
-  "fix this PR's review", "handle PR review", or asks to start an automated fix cycle on a
-  GitHub pull request that has received review feedback.
+  "fix this PR's review", "handle PR review", or asks to address review feedback on a
+  GitHub pull request. Runs once per invocation — invoke again for new feedback.
 ---
 
 # GitHub PR Fixer
 
 You are a PR fixer. Given a PR number, read review feedback from GitHub, implement fixes, run
-tests, commit/push, reply to reviewers, and resolve threads. Loop until all feedback is addressed.
+tests, commit/push, reply to reviewers, and resolve threads. Runs once per invocation.
 
 ## Prerequisites
 
@@ -29,9 +30,11 @@ If the extension is not installed, install it automatically before proceeding.
 
 The user provides a PR number: `PR#11`, `#11`, or just `11`.
 
-On startup, extract the PR number and begin Phase 1.
+On startup, extract the PR number and begin **Phase 0**.
 
-## Phase 1 — Get PR Context
+## Phase 0 — State Detection
+
+Determine whether there is new work to do before proceeding:
 
 ```bash
 # Repo info
@@ -42,37 +45,39 @@ gh pr view <PR> --json number,title,state,headRefName,baseRefName,author
 
 # Ensure we're on the PR branch
 gh pr checkout <PR>
-```
 
-## Phase 2 — Check for Unresolved Feedback
-
-### Review threads (primary)
-
-```bash
+# Check for unresolved review threads
 gh pr-review threads list --pr <PR> --repo {owner}/{repo}
-```
 
-### PR comments (fallback)
+# PR-level discussion comments (check for new feedback or previous completion markers)
+gh api --paginate repos/{owner}/{repo}/issues/<PR>/comments --jq '.[] | {body, user: .user.login, created_at}'
 
-If no review threads exist, check for regular PR comments:
-
-```bash
-gh pr view <PR> --comments --json comments --jq '.comments[] | {body, author: .author.login, createdAt: .createdAt}'
-```
-
-### Existing review comments
-
-```bash
+# Existing review comments (inline)
 gh api repos/{owner}/{repo}/pulls/<PR>/comments --jq '.[] | {id,path,line,body,user: .user.login,pull_request_review_id}'
 ```
 
-### Decision
+Analyze the results and decide how to proceed:
 
-- **No unresolved threads and no new comments** → wait 2 minutes, re-check (up to 3 consecutive
-  empty checks). If still clean → output `✅ All review feedback addressed` and **stop**
-- **Unresolved threads or new comments found** → proceed to Phase 3
+1. **Check for unresolved threads:**
+   - Unresolved threads found → there is new feedback to address → proceed to Phase 1
+   - No unresolved threads → proceed to step 2
 
-## Phase 3 — Analyze Feedback
+2. **Check for new reviewer feedback since your last run:**
+   - Scan PR discussion comments for review feedback (REQUEST_CHANGES or critical comments) posted AFTER the timestamps of your previous replies
+   - New feedback found → proceed to Phase 1 to address it
+   - No new feedback → proceed to step 3
+
+3. **Verify whether all work is already complete:**
+   - Confirm all previous review threads are resolved
+   - Confirm all review comments have been replied to
+   - Confirm the code has been pushed (`git status` shows clean, `git log` shows your commits)
+   - If ALL checks pass → this is a **duplicate invocation**. Output this message and stop:
+     ```
+     ✅ All review feedback has already been addressed. All threads resolved, replies posted, and changes pushed. No further action needed.
+     ```
+   - If any check fails → something is incomplete → proceed to Phase 1 to finish the remaining work
+
+## Phase 1 — Analyze Feedback
 
 For each unresolved comment or thread:
 
@@ -93,7 +98,7 @@ For each unresolved comment or thread:
 - If a reviewer provided a `suggestion` block, prefer applying it (but verify correctness first)
 - If a comment is outdated (code already changed), resolve the thread without fixing
 
-## Phase 4 — Implement Fixes
+## Phase 2 — Implement Fixes
 
 Edit files using the Edit tool. Follow these principles:
 
@@ -102,9 +107,9 @@ Edit files using the Edit tool. Follow these principles:
 - Add/update tests for any new logic
 - One logical change per fix — don't mix unrelated changes
 
-After all fixes are applied, proceed to Phase 5 to verify before committing.
+After all fixes are applied, proceed to Phase 3 to verify before committing.
 
-## Phase 5 — Verify Changes
+## Phase 3 — Verify Changes
 
 Run checks in order. Auto-detect available commands from `package.json`, `Makefile`,
 `pyproject.toml`, or CI workflow files.
@@ -124,7 +129,7 @@ npm test              # or: pytest | bun run test:unit
 
 **If no checks are available:** Skip verification and note it in the reply.
 
-## Phase 6 — Commit and Push
+## Phase 4 — Commit and Push
 
 ```bash
 # Check what changed
@@ -146,7 +151,7 @@ git push
 
 Verify clean state: `git status` should show clean working tree.
 
-## Phase 7 — Reply to Review Threads
+## Phase 5 — Reply to Review Threads
 
 **Reply to ALL open threads before resolving any.**
 
@@ -181,12 +186,9 @@ EOF
 - For non-fixes: explain why the suggestion was not applied (with reasoning)
 - Be concise but clear
 
-## Phase 8 — Wait and Resolve
+## Phase 6 — Resolve Threads and Finish
 
-1. After replying to ALL threads, wait 2 minutes for possible follow-ups
-2. Re-check threads: `gh pr-review threads list --pr <PR> --repo {owner}/{repo}`
-3. **If new replies found** → go back to Phase 3 (analyze new feedback)
-4. **If no new replies** → resolve threads:
+After replying to all threads, resolve them:
 
 ```bash
 # Resolve outdated threads first (code changed, comment no longer applies)
@@ -196,22 +198,6 @@ gh pr-review threads resolve --pr <PR> --repo {owner}/{repo} --thread-id <OUTDAT
 gh pr-review threads resolve --pr <PR> --repo {owner}/{repo} --thread-id <ACTIVE_THREAD_ID>
 ```
 
-## Phase 9 — Loop
+Output `✅ Review feedback addressed` and stop.
 
-After resolving threads:
-
-1. Go back to **Phase 2** to check for any new review activity
-2. If the reviewer has submitted an **APPROVE** review → output `✅ Reviewer approved — all done`
-   and **stop**
-3. Continue until no unresolved threads remain
-
-**Stop conditions:**
-- All threads resolved AND no new feedback after waiting
-- Reviewer has explicitly approved the PR
-- 5 consecutive rounds where no new feedback appears → output summary and stop
-
-## Round Tracking
-
-At the start of each round, announce: `--- Fix Round N ---`
-
-Keep a concise log of what was fixed each round so you don't re-do work.
+This skill runs **once per invocation**. If the reviewer submits new feedback, the user should invoke the skill again.

@@ -1,25 +1,60 @@
 ---
 name: github-pr-reviewer
+version: 1.3.1
 description: >
   Automated GitHub PR reviewer that deep-analyzes a pull request and posts structured review feedback
   directly to GitHub with inline comments, suggestions, and an approve/request-changes verdict.
   Use this skill whenever the user says "review PR", "review this PR", "/github-pr-reviewer",
-  "check PR #N", "is this PR ready to merge", "audit this pull request", or asks to start an
-  automated review cycle on a GitHub pull request. The skill runs in a loop — it reviews, posts
-  feedback, waits for fixes, then re-reviews until the code is approved.
+  "check PR #N", "is this PR ready to merge", "audit this pull request", or asks to review a
+  GitHub pull request. Runs once per invocation — invoke again for re-review after fixes.
 ---
 
 # GitHub PR Reviewer
 
 You are a strict code reviewer. Given a PR number, deep-analyze the changes and post structured
-review feedback directly to GitHub. Then loop: wait for fixes, re-review, repeat until the PR is
-ready to merge.
+review feedback directly to GitHub. Runs once per invocation.
 
 ## Input
 
 The user provides a PR number: `PR#11`, `#11`, or just `11`.
 
-On startup, extract the PR number and begin Phase 1.
+On startup, extract the PR number and begin **Phase 0**.
+
+## Phase 0 — State Detection
+
+Determine the current review round before proceeding:
+
+```bash
+# PR metadata including existing reviews
+gh pr view <PR> --json title,body,baseRefName,headRefName,state,labels,author,reviews,additions,deletions,changedFiles
+
+# Current HEAD SHA
+git rev-parse HEAD
+
+# PR-level discussion comments (search for previous review round markers)
+gh api --paginate repos/{owner}/{repo}/issues/<PR>/comments --jq '.[] | {body, user: .user.login, created_at}'
+```
+
+Analyze the results:
+
+1. **Scan PR discussion comments** for `<!-- review_round:` markers posted by you in previous invocations
+2. **Determine round number:**
+   - No marker found → **Round 1** (first review) → proceed to Phase 1
+   - Marker found → extract the previous `round` number and `sha` → proceed to step 3
+3. **Compare SHA:**
+   - Current HEAD SHA ≠ previous marker SHA → new commits pushed, fixes were made → proceed to Phase 1 as a **re-review (Round N+1)**. Re-run the full Phase 3 analysis from scratch on the updated diff
+   - Current HEAD SHA = previous marker SHA → **no changes since last review** → refuse (see below)
+
+### Refusal — No changes since last review
+
+If the HEAD SHA matches a previous review marker, the fixer has not pushed any changes.
+Do NOT post a new review. Instead, output this message and stop:
+
+```
+⚠️ Cannot review: no new commits since last review (HEAD: <SHA>).
+The previous review feedback has not been addressed yet.
+Please have the fixer implement the changes and push before re-invoking the reviewer.
+```
 
 ## Phase 1 — Gather Context
 
@@ -81,6 +116,7 @@ Review the diff against these priorities (in order of importance):
 7. **Documentation** — Public APIs documented? Breaking changes noted?
 
 Compare against any review comments from previous rounds — verify earlier issues were addressed.
+This comparison is IN ADDITION to, not INSTEAD OF, a full fresh review of the diff.
 
 ## Phase 4 — Run Checks (if available)
 
@@ -125,6 +161,8 @@ Generate a structured report:
 ### Context
 - Linked issues: <list>
 - Files changed: <N> (+<additions> / -<deletions>)
+
+<!-- review_round:<N> sha:<HEAD_SHA> -->
 ```
 
 **Rules:**
@@ -162,6 +200,17 @@ gh api -X POST repos/{owner}/{repo}/pulls/<PR>/reviews --input /tmp/review.json
 
 Clean up: `rm /tmp/review.json`
 
+After posting the review, post a round marker comment so future invocations can detect the state:
+
+```bash
+gh pr comment <PR> --body "📌 **Review Round <N>** completed at <HEAD_SHA>.
+
+<!-- review_round:<N> sha:<HEAD_SHA> -->"
+```
+
+Replace `<N>` with the current round number and `<HEAD_SHA>` with the full HEAD SHA.
+The visible text ensures the comment is not empty in the GitHub UI.
+
 ### Comment Format
 
 Start each inline comment with a priority label:
@@ -182,25 +231,12 @@ number of lines in the comment range.
 - **APPROVE WITH COMMENTS** (`"event": "COMMENT"`) — Non-blocking issues worth noting
 - **REQUEST CHANGES** (`"event": "REQUEST_CHANGES"`) — Blocking issues that must be fixed
 
-## Phase 7 — Review Loop
+## Phase 7 — Finish
 
 After posting the review:
 
-1. If verdict is **APPROVE** → output `✅ LGTM - READY TO MERGE` and **stop**
-2. If **REQUEST_CHANGES** or **APPROVE WITH COMMENTS** → wait 3 minutes
-3. After waiting, pull latest changes: `git pull` and re-fetch the diff
-4. Go back to **Phase 1** with updated context
+1. If verdict is **APPROVE** → output `✅ LGTM - READY TO MERGE`
+2. If **REQUEST_CHANGES** or **APPROVE WITH COMMENTS** → output the review report and stop
 
-On each re-review round, compare findings against previous rounds. Only flag **new** or **unfixed**
-issues. If a previously flagged issue is now fixed, acknowledge it briefly.
+This skill runs **once per invocation**. If the user wants a re-review after fixes, they should invoke the skill again.
 
-**Stop conditions:**
-- Verdict is APPROVE
-- 5 consecutive rounds without progress (both reviewer and fixer stuck) — output a summary
-  and stop with a warning
-
-## Round Tracking
-
-At the start of each round, announce: `--- Review Round N ---`
-
-Keep a concise log of findings per round so you can compare across iterations.

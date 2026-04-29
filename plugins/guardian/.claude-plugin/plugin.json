@@ -1,0 +1,5 @@
+{
+  "name": "guardian",
+  "version": "1.0.0",
+  "description": "Deploy a persistent Guardian teammate to monitor an agent team's progress via tmux on a recurring cron loop. Intervenes only when the team gets stuck."
+}

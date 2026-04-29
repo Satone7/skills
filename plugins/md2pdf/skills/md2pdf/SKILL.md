@@ -1,5 +1,6 @@
 ---
 name: rvfuse:md2pdf
+version: 1.0.0
 description: >
   Convert Markdown documents to PDF for RVFuse project reports.
   Simplified version based on any2pdf: no cover page, inline TOC (not separate page),
@@ -16,7 +17,6 @@ compatibility: >
   Requires Python 3.8+ and reportlab (`pip install reportlab`).
 metadata:
   author: rvfuse
-  version: "1.0.0"
   tags: markdown pdf reportlab simple
 ---
 

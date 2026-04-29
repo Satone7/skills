@@ -26,6 +26,11 @@
       "name": "md2pdf",
       "source": "./plugins/md2pdf",
       "description": "Convert Markdown documents to PDF with CJK/Latin mixed text, fenced code blocks, tables, and clickable TOC. Simplified GitHub Light theme."
+    },
+    {
+      "name": "guardian",
+      "source": "./plugins/guardian",
+      "description": "Deploy a persistent Guardian teammate to monitor an agent team's progress via tmux on a recurring cron loop. Intervenes only when the team gets stuck."
     }
   ]
 }
