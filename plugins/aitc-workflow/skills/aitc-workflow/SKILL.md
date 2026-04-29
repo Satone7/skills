@@ -124,7 +124,6 @@ Agent(
     team_name="<team>",    # team_name is what makes this a teammate
     name="<name>",         # human-readable name, used for SendMessage
     subagent_type="general-purpose",
-    isolation="worktree",
     model="<opus-or-sonnet>",
     mode="auto",
     run_in_background=True,
@@ -133,6 +132,8 @@ Agent(
 ```
 
 The `model` field must be `opus` or `sonnet` for worker teammates (see Model Selection Policy in §2). `haiku` is reserved for the Guardian. **The model must be set as an Agent() call parameter — prompt text alone does NOT control model selection.** Writing `MODEL: sonnet` in the prompt body has no effect on which model the system assigns.
+
+**Do NOT use `isolation="worktree"` in the Agent() call.** It has proven unreliable — in some invocations it creates an isolated worktree, in others the teammate ends up in the main repository. Instead, the Lead creates the worktree manually before spawning (see Execution Loop step 5).
 
 Without `team_name`, the agent is a standalone subagent — invisible to the team, unreachable via SendMessage, unable to coordinate via the shared task list. Every worker must be a teammate (with `team_name`), not a subagent.
 
@@ -357,8 +358,13 @@ FOR EACH task IN plan.tasks (in the order specified by the plan):
   5. For each teammate the task requires (one for single-teammate or emergent;
      multiple only if ROLE-SPLIT was approved):
      a. Assemble role-specific prompt (§2.1)
-     b. Agent(team_name, name, ...) spawn in background
-     c. TaskCreate for tracking
+     b. Create isolated worktree manually (do NOT rely on Agent isolation="worktree"):
+        git worktree add --detach /tmp/worktrees/<team>-<task> main
+        Include TARGET DIRECTORY: /tmp/worktrees/<team>-<task> in the prompt
+     c. Agent(team_name, name, model=..., ...) spawn in background
+     d. TaskCreate for tracking
+     e. Post-spawn verify: check tmux status bar to confirm worktree (⎇ branch)
+        and model. If wrong — kill pane, re-spawn.
   6. WAIT — the active waiting phase (§2.2)
   7. Verification subagent (§2.3) — verify ALL teammates for this task
      ├── PASS → shutdown each → kill panes → TaskUpdate → UPDATE PLAN
