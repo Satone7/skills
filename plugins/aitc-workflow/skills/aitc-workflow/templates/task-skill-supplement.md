@@ -13,7 +13,7 @@ status: active
 
 ## Supplemented Skill
 - **Skill**: `<project-skill>`
-- **Location**: `.claude/skills/<project-skill>/` or `skills/<project-skill>/`
+- **Location**: `skills/<project-skill>/`
 
 ## Issues Found
 <What was wrong, missing, or outdated in the original skill? Be specific —
@@ -33,3 +33,11 @@ merged into the original skill. Structure by affected section.>
 - **Context**: <What was happening>
 - **Finding**: <What was learned>
 - **Implication**: <How this changes the supplement>
+
+## Self-Maintenance Rule
+
+**If you loaded this SKILL and something is wrong** — the supplement's correction is itself outdated, the target skill has changed, or new issues are discovered beyond the original correction — **fix it in this file immediately after completing your work.** Do not silently work around the issue. Do not only report it to the Lead. Edit this file:
+
+1. Correct or expand the `## Corrections / Additions` section
+2. Append a dated entry to `## Discoveries` describing what was wrong and what you changed
+3. No need to consult the Lead for corrections — this is the SKILL maintaining itself
