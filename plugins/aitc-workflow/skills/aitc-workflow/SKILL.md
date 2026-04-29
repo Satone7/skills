@@ -1,6 +1,6 @@
 ---
 name: aitc-workflow
-version: 1.4.0
+version: 1.4.1
 description: >
   Manually invoked workflow orchestrator for any long-running task. This skill is NOT auto-triggered — the user must explicitly request it by name (e.g., "use aitc-workflow", "aitc-workflow Plan mode", or via the Skill tool). By distributing work to isolated teammates, the Lead preserves its context window and avoids attention dilution over extended sessions. Provides three modes: Plan (generate a task plan file), Execute (orchestrate a team through the plan, capturing operational discoveries as task-level SKILLs), and Lifecycle (archive completed task SKILLs and promote reusable knowledge into project or global skills).
 ---
@@ -364,7 +364,8 @@ FOR EACH task IN plan.tasks (in the order specified by the plan):
      c. Agent(team_name, name, model=..., ...) spawn in background
      d. TaskCreate for tracking
      e. Post-spawn verify: check tmux status bar to confirm worktree (⎇ branch)
-        and model. If wrong — kill pane, re-spawn.
+        and model. Record the pane ID (e.g., `%3`) for later shutdown.
+        If wrong — kill pane (`tmux kill-pane -t %<id>`), re-spawn.
   6. WAIT — the active waiting phase (§2.2)
   7. Verification subagent (§2.3) — verify ALL teammates for this task
      ├── PASS → shutdown each → kill panes → TaskUpdate → UPDATE PLAN
@@ -808,15 +809,28 @@ Use a standalone subagent (no `team_name`) because verification is fire-and-forg
 #### After PASS
 
 1. Send shutdown_request to each teammate via SendMessage
-2. Wait for all teammates to confirm exit
-3. Kill each teammate's tmux pane — completed teammates MUST be fully shut down before moving on. Do not leave inactive teammates lingering: they consume tmux panes, clutter the Guardian's monitoring surface, and create ambiguity about who is still working. The only active panes at any moment should belong to the current task's teammates plus the Guardian.
-4. Mark all teammates' tasks completed via TaskUpdate
-5. **Update the plan** — dispatch the plan-editing subagent (§2.0, Plan Document Amendments) to mark the task `[x]`, advance the freeze point, and resolve any gaps. Do NOT proceed until the plan is updated.
-6. Merge all worktrees for this task to the main branch:
+2. Wait for all teammates to confirm exit (the teammate process exits and its tmux pane closes automatically)
+3. For each teammate, verify the tmux pane is gone. The pane ID was recorded at spawn time (step 5e). Confirm:
+   ```bash
+   tmux list-panes -F '#{pane_id}' | grep -c '<pane-id>'
+   ```
+   If the pane still exists (count > 0), the teammate didn't exit cleanly. Kill it:
+   ```bash
+   tmux kill-pane -t <pane-id>
+   ```
+4. Verify no orphan agent processes remain:
+   ```bash
+   ps aux | grep "claude" | grep -v grep | grep -i "<teammate-name>"
+   ```
+   If any found, kill them: `kill <pid>`
+5. Completed teammates MUST be fully shut down before moving on. Do not leave inactive teammates lingering: they consume tmux panes, clutter the Guardian's monitoring surface, and create ambiguity about who is still working. The only active panes at any moment should belong to the current task's teammates plus the Guardian.
+6. Mark all teammates' tasks completed via TaskUpdate
+7. **Update the plan** — dispatch the plan-editing subagent (§2.0, Plan Document Amendments) to mark the task `[x]`, advance the freeze point, and resolve any gaps. Do NOT proceed until the plan is updated.
+8. Merge all worktrees for this task to the main branch:
    ```bash
    git merge --no-ff <worktree-branch-1> <worktree-branch-2> ...
    ```
-7. Proceed to the next task (audit → spawn → ...)
+9. Proceed to the next task (audit → spawn → ...)
 
 ### §2.4 Error Recovery
 
