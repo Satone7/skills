@@ -1,6 +1,6 @@
 {
   "name": "aitc-workflow",
-  "version": "1.6.1",
-  "description": "Manually invoked workflow orchestrator for long-running tasks. Distributes work to isolated teammates to protect the Lead's context window from compression and attention dilution. Provides Plan, Execute, and Lifecycle modes with Guardian-based unattended operation.",
+  "version": "2.0.0",
+  "description": "Multi-agent workflow orchestrator for long-running tasks, split into three manually-invoked SKILLs: aitc-workflow-plan (generate plan), aitc-workflow-execute (orchestrate team), aitc-workflow-lifecycle (archive & promote). Start with aitc-workflow for routing.",
   "dependencies": {}
 }
