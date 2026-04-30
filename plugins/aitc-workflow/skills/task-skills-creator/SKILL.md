@@ -1,11 +1,12 @@
 ---
 name: task-skills-creator
-version: 1.1.0
+version: 1.2.0
 description: >
   Unified task SKILL creator for both discovery capture (teammates during execution)
   and instance parameterization (Lead during Plan mode). Offloads file creation/editing
-  to a forked subagent. Not triggered by user directly — invoked by teammates or Lead
-  during AITC workflow.
+  to a forked subagent. Not triggered by user directly — invoked internally via
+  Skill("task-skills-creator") by teammates who discover reusable knowledge, or by
+  the Lead during Plan mode to create instance task SKILLs (e.g., guardian instance).
 ---
 
 # Task SKILLs Creator
@@ -31,6 +32,8 @@ Ask the teammate:
 3. **Context** — which phase/task
 4. **Relevance** — one-time incident or recurring?
 
+**Quick exit**: if the teammate says "one-time incident, not reusable" — skip. Report "Not reusable — no task SKILL created." This is fine; not every observation needs a file.
+
 ### Step 2 — Dispatch Subagent
 
 Spawn a forked subagent with `INTENT: discovery` (see Subagent Prompt below).
@@ -38,6 +41,8 @@ Spawn a forked subagent with `INTENT: discovery` (see Subagent Prompt below).
 ### Step 3 — Relay Result
 
 Report the subagent's result. The teammate notes created/edited SKILLs in `## Discoveries`.
+
+**If the subagent fails** (no file created, file has remaining placeholders): re-dispatch once with a more explicit prompt — include the exact file path and the exact content to write. If it fails again, report the failure to the Lead and continue working. Do not let a task SKILL creation failure block task completion.
 
 ## Instance Mode (Lead Invocation during Plan Mode)
 
@@ -60,7 +65,7 @@ Spawn a forked subagent with `INTENT: instance` (see below).
 
 ### Step 3 — Verify
 
-After the subagent exits, verify the instance file exists and contains no `<...>` placeholders. If placeholders remain, the subagent failed — re-run with clearer parameters.
+After the subagent exits, verify the instance file exists and contains no `<...>` placeholders. If placeholders remain, the subagent failed — re-run once with more explicit parameter values. If it fails again, fill the placeholders directly and report what happened.
 
 ## Subagent Prompt
 
