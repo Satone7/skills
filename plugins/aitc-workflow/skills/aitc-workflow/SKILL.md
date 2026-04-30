@@ -1,6 +1,6 @@
 ---
 name: aitc-workflow
-version: 1.6.0
+version: 1.6.1
 description: >
   Manually invoked workflow orchestrator for long-running tasks. This skill is NOT auto-triggered —
   the user must explicitly request it (e.g., "use aitc-workflow", "aitc-workflow Plan mode", or via
@@ -86,7 +86,7 @@ User describes a long-running task without an existing plan file.
 
 **1.3 Align with User** — Present your analysis. Use the brainstorming pattern: present options with reasoning, one question at a time. Cover: execution order, model selection, priority and scope.
 
-**1.4 Generate Plan File** — Write to `docs/plans/<batch-name>-<date>.md`. See `templates/` for the plan skeleton. Key points to include:
+**1.4 Generate Plan File** — Write to `docs/plans/<batch-name>-<date>.md`. Use `templates/plan-template.md` as the skeleton. Key points to include:
 
 - **Team Structure** — Explain teammate vs subagent distinction. Include a concrete `Agent()` example. The `model` field must be `opus` or `sonnet` for workers, `haiku` for Guardian. Do not use `isolation="worktree"` — the Lead creates worktrees manually.
 - **Task table** with status markers: `[ ]` pending | `[>]` in-progress | `[x]` completed | `[~]` re-planned | `[-]` abandoned

@@ -1,6 +1,6 @@
 {
   "name": "aitc-workflow",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Manually invoked workflow orchestrator for long-running tasks. Distributes work to isolated teammates to protect the Lead's context window from compression and attention dilution. Provides Plan, Execute, and Lifecycle modes with Guardian-based unattended operation.",
   "dependencies": {}
 }
