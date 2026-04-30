@@ -72,27 +72,57 @@ The guardian instance task SKILL was created during Plan mode. Read it at `skill
 
 ## Plan Editing Boundary
 
-All plan document modifications go through a standalone subagent that loads `templates/plan-editing-rules.md`. The Lead never edits the plan directly.
+**HARD RULE: The Lead never edits the plan directly. Never. Not even for trivial status updates.** Every plan modification — including marking a single `[ ]` → `[x]` — goes through a standalone subagent. Direct edits corrupt the plan's integrity and the atomicity check will catch them.
 
 This boundary exists because:
 1. **Context hygiene** — editing rules are verbose; keeping them out of the Lead's context preserves space for orchestration
 2. **Rule compliance** — a subagent with no stake in the outcome applies the frozen prefix constraint more reliably
+3. **Atomicity** — the subagent runs the pre-edit dirty check, enforces all rules, and commits atomically; the Lead cannot accidentally skip these steps
 
 The Lead treats the plan-editing subagent like a compiler: hand it a change request, verify the output. The Lead does not read `templates/plan-editing-rules.md`.
 
-**When to trigger a plan edit:**
+### Concrete Subagent Template
 
-| Event | Instruction to Subagent |
-|-------|------------------------|
-| Teammate passes verification | Mark task `[x]` completed |
-| Emergent task discovered | Insert new task with scope and classification |
-| Task blocked/impossible | Mark `[~]` re-planned or `[-]` abandoned |
+Use this exact template for every plan edit. Fill the `<>` placeholders and spawn:
 
-**Atomicity check** (after every plan edit):
+```
+Agent(
+    description="Update plan: <brief>",
+    subagent_type="general-purpose",
+    model="sonnet",
+    prompt="""
+    Edit docs/plans/<batch>.md following every rule in
+    plugins/aitc-workflow/skills/aitc-workflow/templates/plan-editing-rules.md.
+
+    CHANGE REQUEST: <what to change and why>
+
+    Procedure (from plan-editing-rules.md):
+    1. Pre-edit dirty check: git status --porcelain docs/plans/<batch>.md
+       If non-empty → REJECT, report to Lead, do not proceed
+    2. Read the plan file, apply the change, enforce frozen prefix + all rules
+    3. Commit: git add docs/plans/<batch>.md && git commit -m "chore(plan): <specific>"
+    4. Report: what changed, new freeze point, commit SHA
+    """
+)
+```
+
+### When to Trigger
+
+| Event | CHANGE REQUEST value |
+|-------|---------------------|
+| Teammate passes verification | "Mark task <ID> as [x] completed" |
+| Emergent task discovered | "Insert emergent task <E#>: <name> with scope <scope>, model <model>, priority <priority>" |
+| Task blocked/impossible | "Mark task <ID> as [~] re-planned (replaced by <new tasks>) / [-] abandoned (reason: <why>)" |
+
+### After Every Plan Edit
+
+Verify the subagent actually committed:
 ```bash
 git status --porcelain docs/plans/<batch>.md
 ```
-Empty output = clean. Non-empty = the subagent's commit failed or there are unauthorized modifications. Investigate with `git diff` and `git log`, resolve the dirty state.
+Empty output = clean. Non-empty = the subagent's commit failed or the Lead edited directly (forbidden). Investigate with `git diff` and `git log`, resolve the dirty state, then re-dispatch the edit through a subagent.
+
+If you catch yourself editing the plan directly — stop immediately. See error recovery: `references/error-recovery.md` §"Lead Edited Plan Directly".
 
 ## Execution Loop
 
@@ -104,7 +134,7 @@ Empty output = clean. Non-empty = the subagent's commit failed or there are unau
 FOR EACH task IN plan.tasks (in plan order):
   4. PRE-EXECUTION AUDIT (references/audit-subagent.md):
      ├── Simple/moderate → single teammate, proceed to step 5
-     ├── Emergent tasks found → amend plan, re-rank, each gets single teammate
+     ├── Emergent tasks found → plan-edit subagent (§Plan Editing Boundary) to insert them, re-rank, each gets single teammate
      └── ROLE-SPLIT flag → gated review (references/role-split-review.md) → APPROVE or REJECT
   5. For each teammate:
      a. Assemble prompt (references/prompt-assembly.md)
@@ -115,7 +145,7 @@ FOR EACH task IN plan.tasks (in plan order):
         Record pane ID for later shutdown. If wrong — tmux kill-pane -t %<id>, re-spawn.
   6. WAIT — active waiting phase (see below)
   7. Verification subagent (references/verification-subagent.md):
-     ├── PASS → shutdown teammates → kill panes → TaskUpdate → UPDATE PLAN → git merge → next
+     ├── PASS → shutdown teammates → kill panes → TaskUpdate → plan-edit subagent (§Plan Editing Boundary) → git merge → next
      └── FAIL → SendMessage fix list → teammate reworks → goto 6
 
 8. Cross-task synthesis (if in plan)

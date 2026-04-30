@@ -48,6 +48,20 @@ Recurring cron jobs auto-expire after 7 days (session lifetime bound). For tasks
 - Set `durable: true` when creating the Guardian cron (if supported)
 - Or re-create the Guardian cron at day 6
 
+## Lead Edited Plan Directly
+
+If the Lead edited the plan directly (violating the Plan Editing Boundary rule):
+
+1. **Stop.** Do not continue orchestration. The plan file may now violate the frozen prefix constraint or have uncommitted changes.
+2. Run `git diff docs/plans/<batch>.md` to see what was changed.
+3. If the change was correct (e.g., marking a task `[x]`) but done through the wrong channel:
+   - Commit the change: `git add docs/plans/<batch>.md && git commit -m "chore(plan): <what was changed>"`
+   - The edit is accepted — the problem is the channel, not the content
+4. If the change introduced errors (wrong marker, wrong task, frozen prefix violation):
+   - Revert: `git checkout docs/plans/<batch>.md`
+   - Re-dispatch the correct edit through the plan-editing subagent using the template in §Plan Editing Boundary
+5. **Root cause**: The Lead edited directly because spawning a subagent felt heavier than the edit. But the subagent template in §Plan Editing Boundary is copy-pasteable — use it. The subagent also runs the dirty check and enforces the frozen prefix constraint, which direct edits skip.
+
 ## Verification Loop Exhaustion
 
 If a teammate fails verification 3 times (the rework limit):
