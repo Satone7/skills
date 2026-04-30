@@ -1,6 +1,6 @@
 ---
 name: aitc-workflow
-version: 1.5.0
+version: 1.5.1
 description: >
   Manually invoked workflow orchestrator for long-running tasks. This skill is NOT auto-triggered —
   the user must explicitly request it (e.g., "use aitc-workflow", "aitc-workflow Plan mode", or via
@@ -96,7 +96,14 @@ User describes a long-running task without an existing plan file.
 
 **1.5 Initialize Task SKILL Directory** — Verify no other `skills/aitc-task-xxx/` exists. Only one active directory at any time. If a stale one exists, ask the user whether to archive it. Create `skills/aitc-task-<batch-name>/`.
 
-**1.6 Report** — Tell the user where the plan was saved and that they're ready for Execute mode.
+**1.6 Commit the Plan** — The plan file must be committed before Execute mode begins. This establishes a clean baseline for the plan-editing subagent's atomicity checks during execution:
+
+```bash
+git add docs/plans/<batch>.md skills/aitc-task-<batch>/
+git commit -m "plan: add execution plan for <batch-name>"
+```
+
+**1.7 Report** — Tell the user where the plan was saved and that they're ready for Execute mode.
 
 ## §2 Execute Mode — Orchestrate Execution
 
