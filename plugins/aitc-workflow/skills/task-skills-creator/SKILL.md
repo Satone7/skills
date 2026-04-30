@@ -1,80 +1,164 @@
 ---
 name: task-skills-creator
-version: 1.0.0
+version: 1.1.0
 description: >
-  Lightweight task SKILL creator invoked by teammates in real-time when they discover
-  reusable operational knowledge. Offloads file creation/editing to a forked subagent
-  so the teammate's context stays lean. Not triggered by user directly — teammates
-  invoke it during AITC workflow execution.
+  Unified task SKILL creator for both discovery capture (teammates during execution)
+  and instance parameterization (Lead during Plan mode). Offloads file creation/editing
+  to a forked subagent. Not triggered by user directly — invoked by teammates or Lead
+  during AITC workflow.
 ---
 
 # Task SKILLs Creator
 
 ## Purpose
 
-You are invoked by a teammate during AITC workflow execution when they discover something worth capturing as a task SKILL. Your job: spawn a forked subagent to handle the file work (check existing SKILLs, decide merge vs create, write files) so the teammate's context stays clean.
+You create and maintain task SKILL files. You are invoked in two contexts:
 
-The teammate describes what they found. You do the rest.
+1. **Teammates during execution** — when they discover reusable operational knowledge
+2. **Lead during Plan mode** — when creating instance task SKILLs (parameterizing project skills for this session)
 
-## When a Teammate Invokes You
+In both cases, you spawn a forked subagent to handle file work so the caller's context stays clean.
 
-The teammate calls `Skill("task-skills-creator")` with a discovery description. They should invoke you **immediately** when they discover something — not wait until work is done. Real-time capture prevents loss from context compression.
+## Discovery Mode (Teammate Invocation)
 
-## Procedure
+The teammate calls `Skill("task-skills-creator")` when they discover something worth capturing. They should invoke **immediately** — not wait until work is done.
 
 ### Step 1 — Collect Discovery Details
 
-Ask the teammate for the minimum information needed:
+Ask the teammate:
+1. **What happened** — expected vs actual
+2. **What they did** — concrete steps, commands, workarounds
+3. **Context** — which phase/task
+4. **Relevance** — one-time incident or recurring?
 
-1. **What happened** — what they expected vs what actually happened
-2. **What they did** — concrete steps, commands, or workarounds
-3. **Context** — which phase/task this was discovered during
-4. **Relevance** — is this a one-time incident or could it recur?
+### Step 2 — Dispatch Subagent
 
-If the teammate already described these in their message, don't re-ask. Extract what's there.
+Spawn a forked subagent with `INTENT: discovery` (see Subagent Prompt below).
 
-### Step 2 — Dispatch Forked Subagent
+### Step 3 — Relay Result
 
-Spawn a standalone subagent (no `team_name`) to handle creation. This keeps the file work out of the teammate's context:
+Report the subagent's result. The teammate notes created/edited SKILLs in `## Discoveries`.
+
+## Instance Mode (Lead Invocation during Plan Mode)
+
+The Lead calls `Skill("task-skills-creator")` during Plan mode to create an instance task SKILL. The Lead provides:
+1. **Base skill name** — the project skill to parameterize (e.g., `guardian`)
+2. **Parameterization values** — all concrete values for this session
+3. **Batch name** — the active batch
+
+### Step 1 — Collect Parameters
+
+Ask the Lead:
+1. Which base skill to instantiate?
+2. What are the concrete parameter values?
+
+If the Lead already provided these, don't re-ask.
+
+### Step 2 — Dispatch Subagent
+
+Spawn a forked subagent with `INTENT: instance` (see below).
+
+### Step 3 — Verify
+
+After the subagent exits, verify the instance file exists and contains no `<...>` placeholders. If placeholders remain, the subagent failed — re-run with clearer parameters.
+
+## Subagent Prompt
+
+Use `INTENT: discovery` or `INTENT: instance` and fill the appropriate section:
 
 ```
 Agent(
-    description="Capture task SKILL discovery",
+    description="Create/edit task SKILL",
     subagent_type="general-purpose",
     model="sonnet",
     mode="default",
     prompt="""
-    Capture a discovery as a task SKILL file.
+    Create or edit a task SKILL file.
 
+    INTENT: <discovery | instance>
+    Batch: <batch-name>
+    Worktree or target directory: <path>
+
+    ── DISCOVERY MODE ──
     DISCOVERY:
-    - What: <teammate's description>
-    - Concrete steps: <what they did>
+    - What: <description>
+    - Concrete steps: <what was done>
     - Context: <phase/task>
-    - Batch: <batch-name>
-    - Worktree: <path>
 
     STEP 1 — Check for existing task SKILLs:
     Run: bash plugins/aitc-workflow/skills/find-task-skills/list-task-skills.sh <batch-name>
-    Review the output. For each existing task SKILL, read its frontmatter and
-    "## What" / "## Purpose" section.
+    Review the output.
 
     STEP 2 — Decide: merge or create?
-    - If this discovery fills a gap in an EXISTING task SKILL → edit that file
-      (append to "## How" or create a "## Discoveries" entry). This is
-      Self-Maintenance.
-    - If this discovery supplements a known PROJECT skill (skills/<name>/)
-      → create a NEW supplement task SKILL in skills/aitc-task-<batch>/
-    - If this is entirely new → create a NEW task SKILL
-    - If it's a one-time log entry (not reusable) → skip creation, report "Not reusable"
+    - Fills a gap in an EXISTING task SKILL → edit that file (Self-Maintenance)
+    - Supplements a known PROJECT skill → create supplement task SKILL
+    - Entirely new → create new task SKILL
+    - One-time log entry (not reusable) → skip, report "Not reusable"
 
-    STEP 3 — Create or edit the file:
-    Files go in: skills/aitc-task-<batch>/ in the worktree.
+    ── INSTANCE MODE ──
+    INSTANCE:
+    - Base skill: <skill-name> (e.g., guardian)
+    - Parameters:
+      - team_name: <value>
+      - batch_name: <value>
+      - instance_skill_path: <value>
+      - log_file_path: <value>
+      - notes_file_path: <value>
+      - plan_file_path: <value>
+      - task_count: <value>
+      - cron_interval: <value>
+      (Add or remove parameters as needed for the specific base skill)
+
+    STEP 1 — Invoke the base skill: Skill("<base-skill-name>")
+    Read its full content. Identify EVERY placeholder (text in <angle-brackets>).
+
+    STEP 2 — Fill all placeholders with the concrete parameter values provided.
+    No placeholder may remain.
+
+    STEP 3 — Create the instance file using the instance template format:
+
+    ---
+    name: <skill>-<batch>
+    description: Instance of <skill> configured for batch <batch>
+    type: task
+    task-type: instance
+    instance-of: <skill-name>
+    batch: <batch-name>
+    created: <today>
+    status: active
+    ---
+
+    # <Skill Name> — Instance for `<batch>`
+
+    ## Parameterization
+    - <param-name>: <concrete-value>
+    (List ALL parameters with their concrete values)
+
+    ## Differences from Base Skill
+    None — follows base skill exactly.
+    (Or note any deviations)
+
+    ## Discoveries
+    (Empty — populated during execution)
+
+    ## Self-Maintenance Rule
+
+    If you loaded this SKILL and something is wrong — a parameter value is incorrect,
+    the instance configuration doesn't match reality — fix it in this file immediately.
+    Do not silently work around. Edit:
+    1. Correct the outdated value(s) in ## Parameterization or ## Differences
+    2. Append a dated entry to ## Discoveries
+    3. No need to consult the Lead
+
+    ── COMMON ──
+
+    File location: skills/aitc-task-<batch>/<filename>.md
 
     NEW task SKILL format:
     ```markdown
     ---
     name: <descriptive-kebab-name>
-    description: <one-line description>
+    description: <one-line>
     type: task
     task-type: new
     batch: <batch-name>
@@ -88,27 +172,21 @@ Agent(
     <What was discovered — expected vs actual>
 
     ## How
-    <Concrete steps, commands with real values, workaround procedure.
-    Zero abstraction is fine here — use actual IPs, flags, paths.>
+    <Concrete steps, commands with real values. Zero abstraction is fine.>
 
     ## Discoveries
-    (Empty — populated by Self-Maintenance)
+    (Empty)
 
     ## Self-Maintenance Rule
-
-    If you loaded this SKILL and something is wrong — a command changed, an IP unreachable,
-    a step order incorrect — fix it in this file immediately after completing your work.
-    Do not silently work around. Edit:
-    1. Correct the outdated information
-    2. Append to ## Discoveries with what was wrong and what you changed
-    3. No need to consult the Lead
+    If you loaded this SKILL and something is wrong — fix it in this file
+    immediately after completing your work. Do not silently work around.
     ```
 
-    SUPPLEMENT task SKILL (if correcting a project skill):
+    SUPPLEMENT task SKILL format:
     ```markdown
     ---
-    name: <project-skill>-<brief-description>
-    description: Supplements <project-skill> with <what this adds/corrects>
+    name: <project-skill>-<brief>
+    description: Supplements <project-skill> with <what this adds>
     type: task
     task-type: supplement
     supplements: <project-skill-name>
@@ -120,33 +198,19 @@ Agent(
     # Supplement to `<project-skill>`
 
     ## What
-    <What was wrong/missing in the original skill>
+    <What was wrong/missing in the original>
 
     ## How
-    <Corrected or additional content. Structure by affected section.>
+    <Corrected or additional content>
 
     ## Discoveries
-    (Empty — populated by Self-Maintenance)
+    (Empty)
 
     ## Self-Maintenance Rule
     (Same as above)
     ```
 
-    Note: "new" and "supplement" are the only two types you create.
-    "instance" type is created only by the Lead or Guardian setup subagent.
-
-    STEP 4 — Report:
-    - What file was created or edited
-    - Why merge vs create was chosen
-    - The file path in the worktree
+    Report: what file was created/edited, why merge vs create was chosen, file path.
     """
 )
 ```
-
-### Step 3 — Relay Result to Teammate
-
-Report the subagent's result back to the teammate. They should note the created/edited SKILL in their `## Discoveries` section when reporting completion.
-
-### Step 4 — Teammate Verification
-
-The teammate confirms: "Noted. Will report in Discoveries." This closes the loop.

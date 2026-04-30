@@ -47,7 +47,7 @@ All teammates and subagents use one of: `opus`, `sonnet`, or `haiku`. No version
 | Worker teammate (default) | `sonnet` | Balanced capability/cost for execution work |
 | Worker teammate (complex/critical) | `opus` | When audit determines the task requires maximum capability |
 | Plan-editing subagent | `sonnet` | Rule-following with known rules, procedural |
-| Guardian instance subagent | `sonnet` | Template filling, procedural |
+| task-skills-creator subagent (instance mode) | `sonnet` | Template filling, procedural |
 | Guardian | `haiku` | Monitoring is pattern-matching; cheapest model sufficient |
 
 ## Guardian Setup

@@ -51,50 +51,23 @@ Verify no other `skills/aitc-task-xxx/` exists. Only one active directory at any
 
 Instance task SKILLs parameterize project skills with concrete values for this session. All placeholders are known after plan generation — fill them now so Execute mode can use them directly.
 
-**Guardian instance** (required for every work session):
-
-Dispatch a `sonnet` subagent to create the instance:
+Use `Skill("task-skills-creator")` in instance mode:
 
 ```
-Agent(
-    description="Create guardian instance for <batch>",
-    subagent_type="general-purpose",
-    model="sonnet",
-    mode="default",
-    prompt="""
-    Create a guardian instance task SKILL for batch "<batch-name>".
+Skill("task-skills-creator")
 
-    1. Invoke the guardian skill: Skill("guardian")
-    2. Read the plan at docs/plans/<batch>.md to extract:
-       - team-name
-       - task-count
-       - batch-name
-    3. Fill EVERY placeholder in the guardian skill's prompt template
-       with concrete values for this batch.
-    4. Create the instance at:
-       skills/aitc-task-<batch>/guardian-<batch>.md
-       Use template: plugins/aitc-workflow/skills/aitc-workflow/templates/task-skill-instance.md
-       - instance-of: guardian
-       - Parameterization: ALL filled placeholders (cron interval, team name,
-         log path, notes path, plan path, task count)
-       - Differences from Base Skill: "None — follows base skill exactly"
-
-    Required parameterization values:
-       - team_name: from plan
-       - batch_name: from plan
-       - instance_skill_path: skills/aitc-task-<batch>/guardian-<batch>.md
-       - log_file_path: docs/plans/guardian-log-<batch>.md
-       - notes_file_path: /tmp/guardian-<team-name>-notes.txt
-       - plan_file_path: docs/plans/<batch>.md
-       - task_count: from plan
-       - cron_interval: "*/5 * * * *"
-
-    Report the created file path.
-    """
-)
+Create an instance task SKILL for base skill "guardian" with these parameters:
+- team_name: <from plan>
+- batch_name: <from plan>
+- instance_skill_path: skills/aitc-task-<batch>/guardian-<batch>.md
+- log_file_path: docs/plans/guardian-log-<batch>.md
+- notes_file_path: /tmp/guardian-<team-name>-notes.txt
+- plan_file_path: docs/plans/<batch>.md
+- task_count: <from plan>
+- cron_interval: "*/5 * * * *"
 ```
 
-Verify the subagent's output: the instance file exists and contains no `<...>` placeholders.
+After the SKILL completes, verify the instance file exists and contains no `<...>` placeholders.
 
 Instance task SKILLs — unlike discovery-based task SKILLs — are created by the Lead during Plan mode because all parameter values are known at plan time.
 
