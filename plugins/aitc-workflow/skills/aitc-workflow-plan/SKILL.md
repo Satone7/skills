@@ -47,18 +47,70 @@ Key points to include:
 
 Verify no other `skills/aitc-task-xxx/` exists. Only one active directory at any time. If a stale one exists, ask the user whether to archive it. Create `skills/aitc-task-<batch-name>/`.
 
-### 1.6 Commit the Plan
+### 1.6 Create Instance Task SKILLs
 
-The plan file must be committed before Execute mode begins. This establishes a clean baseline for the plan-editing subagent's atomicity checks during execution:
+Instance task SKILLs parameterize project skills with concrete values for this session. All placeholders are known after plan generation — fill them now so Execute mode can use them directly.
+
+**Guardian instance** (required for every work session):
+
+Dispatch a `sonnet` subagent to create the instance:
+
+```
+Agent(
+    description="Create guardian instance for <batch>",
+    subagent_type="general-purpose",
+    model="sonnet",
+    mode="default",
+    prompt="""
+    Create a guardian instance task SKILL for batch "<batch-name>".
+
+    1. Invoke the guardian skill: Skill("guardian")
+    2. Read the plan at docs/plans/<batch>.md to extract:
+       - team-name
+       - task-count
+       - batch-name
+    3. Fill EVERY placeholder in the guardian skill's prompt template
+       with concrete values for this batch.
+    4. Create the instance at:
+       skills/aitc-task-<batch>/guardian-<batch>.md
+       Use template: plugins/aitc-workflow/skills/aitc-workflow/templates/task-skill-instance.md
+       - instance-of: guardian
+       - Parameterization: ALL filled placeholders (cron interval, team name,
+         log path, notes path, plan path, task count)
+       - Differences from Base Skill: "None — follows base skill exactly"
+
+    Required parameterization values:
+       - team_name: from plan
+       - batch_name: from plan
+       - instance_skill_path: skills/aitc-task-<batch>/guardian-<batch>.md
+       - log_file_path: docs/plans/guardian-log-<batch>.md
+       - notes_file_path: /tmp/guardian-<team-name>-notes.txt
+       - plan_file_path: docs/plans/<batch>.md
+       - task_count: from plan
+       - cron_interval: "*/5 * * * *"
+
+    Report the created file path.
+    """
+)
+```
+
+Verify the subagent's output: the instance file exists and contains no `<...>` placeholders.
+
+Instance task SKILLs — unlike discovery-based task SKILLs — are created by the Lead during Plan mode because all parameter values are known at plan time.
+
+### 1.7 Commit the Plan
+
+The plan file and instance task SKILLs must be committed before Execute mode begins:
 
 ```bash
 git add docs/plans/<batch>.md skills/aitc-task-<batch>/
 git commit -m "plan: add execution plan for <batch-name>"
 ```
 
-### 1.7 Report and Hand Off
+### 1.8 Report and Hand Off
 
 Tell the user:
 - Plan saved to: `docs/plans/<file>.md`
 - Task SKILL directory: `skills/aitc-task-<batch>/`
+- Guardian instance created
 - **Next step**: invoke `aitc-workflow-execute` to run this plan

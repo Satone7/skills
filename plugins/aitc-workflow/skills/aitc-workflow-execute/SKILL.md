@@ -52,12 +52,23 @@ All teammates and subagents use one of: `opus`, `sonnet`, or `haiku`. No version
 
 ## Guardian Setup
 
-The Guardian must be online before any worker teammate. The Lead delegates instance creation to a subagent. Full procedure: `references/guardian-setup.md`.
+The guardian instance task SKILL was created during Plan mode. Read it at `skills/aitc-task-<batch>/guardian-<batch>.md`.
 
-Summary:
-1. Dispatch a `sonnet` subagent to create the guardian instance task SKILL (fills all placeholders)
-2. Lead verifies no `<...>` remain, then spawns Guardian with `model="haiku"`
-3. Wait for Guardian's confirmation before spawning workers
+1. Verify the instance file has no `<...>` placeholders remaining (if any found, the Plan mode subagent failed — fill and commit before proceeding)
+2. Spawn the Guardian using the instance's parameterization:
+   ```
+   Agent(
+       team_name="<team-name>",
+       name="guardian",
+       subagent_type="general-purpose",
+       model="haiku",
+       mode="auto",
+       run_in_background=True,
+       prompt="""<filled guardian prompt from instance task SKILL>"""
+   )
+   ```
+3. The Guardian self-configures: creates cron job, initializes log/notes files, reports online via SendMessage
+4. Wait for Guardian's confirmation before spawning workers
 
 ## Plan Editing Boundary
 
@@ -87,7 +98,7 @@ Empty output = clean. Non-empty = the subagent's commit failed or there are unau
 
 ```
 1. TeamCreate(team_name="<name>")
-2. Guardian Setup → subagent creates instance → Lead verifies → spawn Guardian
+2. Guardian Setup → read instance created by Plan mode → verify → spawn Guardian
 3. Guardian must be online before any worker teammate
 
 FOR EACH task IN plan.tasks (in plan order):
