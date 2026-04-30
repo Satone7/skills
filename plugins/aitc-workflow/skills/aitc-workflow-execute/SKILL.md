@@ -1,6 +1,6 @@
 ---
 name: aitc-workflow-execute
-version: 1.0.0
+version: 1.1.0
 description: >
   Manually invoked — NOT auto-triggered. Orchestrate a team through an existing plan file.
   User must explicitly request it (e.g., "use aitc-workflow-execute", "execute the plan",

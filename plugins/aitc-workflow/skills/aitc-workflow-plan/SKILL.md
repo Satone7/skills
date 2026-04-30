@@ -1,6 +1,6 @@
 ---
 name: aitc-workflow-plan
-version: 1.0.0
+version: 1.1.0
 description: >
   Manually invoked — NOT auto-triggered. Generate an execution plan for a long-running task.
   User must explicitly request it (e.g., "use aitc-workflow-plan", "create a plan", "plan this task").
