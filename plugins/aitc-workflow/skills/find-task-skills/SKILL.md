@@ -1,8 +1,12 @@
 ---
 name: find-task-skills
-version: 1.0.0
+version: 1.1.0
 description: >
-  Discover and load relevant task SKILLs from the active task SKILL directory. Used by teammates during AITC workflow execution to find operational knowledge without the Lead manually listing every task SKILL in the prompt.
+  Discover and load relevant task SKILLs from the active task SKILL directory. Used by
+  teammates during AITC workflow execution to find operational knowledge without the Lead
+  manually listing every task SKILL in the prompt. Invoke via Skill("find-task-skills")
+  at the start of every teammate task, and again when encountering a problem that existing
+  task SKILLs might address. Also invoked internally by task-skills-creator subagents.
 ---
 
 # Find Task SKILLs
@@ -15,7 +19,14 @@ This skill replaces the Lead manually listing task SKILL references in your prom
 
 ## When to Use
 
-Invoke this skill at the START of your work, before executing any task phases. Also invoke it if you encounter a problem mid-work that existing task SKILLs might address.
+Invoke this skill at these points during your work:
+
+| When | Why |
+|------|-----|
+| **Before starting any task phase** | Load known pitfalls and procedures before you hit them |
+| **Encountering an error or unexpected behavior** | A previous teammate may have already solved this |
+| **About to use a tool or system you haven't worked with** | Someone may have documented quirks |
+| **After task-skills-creator creates a new task SKILL** | Verify it appears in the directory listing |
 
 ## Procedure
 
