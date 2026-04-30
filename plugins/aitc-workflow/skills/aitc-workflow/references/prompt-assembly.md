@@ -66,3 +66,29 @@ skills/aitc-task-<batch>/
 ```
 
 The `find-task-skills` skill handles listing, relevance judgment, loading, and self-maintenance. The Lead no longer manually populates this section — the teammate discovers task SKILLs independently.
+
+## Part F — Real-Time Task SKILL Creation
+
+Include verbatim in every teammate prompt:
+
+```
+TASK SKILL CREATION:
+When you discover something worth capturing — a wrong assumption in docs,
+a missing prerequisite, a workaround that worked, a concrete value that
+future teammates will need — invoke task-skills-creator IMMEDIATELY:
+
+  Skill("task-skills-creator")
+
+Describe what you found. The skill will handle everything else: check
+existing task SKILLs, decide whether to merge or create new, and write
+the file. You just report what happened.
+
+Do NOT wait until your work is done. Context compression erases details.
+Capture knowledge in real-time, as soon as you discover it.
+
+Before reporting completion: verify that every discovery has a corresponding
+task SKILL file in skills/aitc-task-<batch>/. Completion reports listing
+discoveries without task SKILL files will FAIL verification.
+```
+
+This is a hard gate — the verification subagent (§2.3) cross-checks reported discoveries against the task SKILL directory. Missing files = FAIL.

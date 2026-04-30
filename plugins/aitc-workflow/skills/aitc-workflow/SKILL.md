@@ -1,6 +1,6 @@
 ---
 name: aitc-workflow
-version: 1.5.1
+version: 1.6.0
 description: >
   Manually invoked workflow orchestrator for long-running tasks. This skill is NOT auto-triggered —
   the user must explicitly request it (e.g., "use aitc-workflow", "aitc-workflow Plan mode", or via
@@ -229,7 +229,7 @@ Every plan edit goes through a standalone subagent following `templates/plan-edi
 
 ### §2.1 Prompt Assembly
 
-Every teammate prompt follows a five-part structure. Full templates: `references/prompt-assembly.md`.
+Every teammate prompt follows a six-part structure. Full templates: `references/prompt-assembly.md`.
 
 | Part | Content | Source |
 |------|---------|--------|
@@ -238,8 +238,11 @@ Every teammate prompt follows a five-part structure. Full templates: `references
 | C | Phase requirements | Plan (verbatim) |
 | D | Discovery reporting mandate | `templates/teammate-prompt-fragment.md` |
 | E | Task SKILL discovery (find-task-skills invocation) | Verbatim |
+| F | Real-time task SKILL creation (task-skills-creator invocation) | Verbatim |
 
 The `MODEL:` line in Part A is informational — the actual model is set by `model=` in `Agent()`. Both must agree to avoid false self-perception.
+
+**Part F is a hard gate**: before reporting completion, the teammate must have invoked `task-skills-creator` for every discovery. Completion reports that list discoveries without corresponding task SKILL files are rejected at verification (§2.3).
 
 ### §2.2 WAIT — Active Waiting Phase
 
@@ -281,15 +284,18 @@ Record to `skills/aitc-task-<batch>/.discovery-hints.md`.
 
 #### §2.2.1 Task SKILL Creation and Maintenance
 
-Task SKILLs are created by the teammate who discovered the knowledge — they have it fresh in context. Routing through the Lead would lose detail.
+Teammates invoke the `task-skills-creator` skill in real-time when they discover reusable knowledge. The skill spawns a forked subagent that handles file creation/editing — the teammate just describes what they found. This keeps the teammate's context lean and ensures capture happens before compression erases detail.
 
-| Discovery Type | Who Creates | Where |
-|---------------|-------------|-------|
-| New operational knowledge | Teammate who discovered it | New file in worktree's `skills/aitc-task-<batch>/` |
-| Correction to existing task SKILL | Teammate who loaded that SKILL | Direct edit (Self-Maintenance Rule) |
-| Instance parameterization | Lead or teammate | New file following instance template |
+Teammates do not create task SKILL files manually. They always go through `task-skills-creator`. The only exception is Self-Maintenance: if they loaded a task SKILL and found an inconsistency, they edit that file directly.
 
-Three types: **new** (novel operation), **supplement** (corrections to existing skills), **instance** (parameterization for this session). Teammates follow existing task SKILLs as format examples — they don't need to read templates.
+| Discovery Type | Mechanism | Where |
+|---------------|-----------|-------|
+| New operational knowledge | `Skill("task-skills-creator")` | New file in `skills/aitc-task-<batch>/` |
+| Correction to existing task SKILL | Direct edit (Self-Maintenance Rule) | Edit the loaded SKILL file |
+| Supplement to project skill | `Skill("task-skills-creator")` | New supplement file |
+| Instance parameterization | Lead (pre-execution) | New file following instance template |
+
+**Hard gate**: before reporting completion, the teammate verifies every discovery has a corresponding task SKILL file. The verification subagent (§2.3) cross-checks reported discoveries against the task SKILL directory. Missing files = FAIL.
 
 **Lead review** (during WAIT): check name, type, reusability, and content. The Lead can rename, retype, edit, or delete teammate-created task SKILLs.
 

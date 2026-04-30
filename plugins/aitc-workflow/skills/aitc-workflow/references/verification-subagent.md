@@ -25,8 +25,12 @@ Agent(
 
     DISCOVERY CHECK:
     - [ ] Each teammate reported Discoveries for their phases
+    - [ ] For each reported discovery, a corresponding task SKILL file
+          exists in skills/aitc-task-<batch>/ → if missing, FAIL
     - [ ] Cross-check: any error-recovery pattern in execution logs
           that was not reported as a Discovery → FAIL
+    - [ ] Cross-check: any tmux observation of manual workarounds
+          that produced no task SKILL → FAIL
     - [ ] For role-split tasks: any handoff gap between roles
           (researcher described X but implementer built Y) → FAIL
 
