@@ -26,7 +26,17 @@ Read the project's CLAUDE.md to understand available project skills, conventions
 
 ### 1.2 Analyze Each Task
 
-For each task: identify its nature, estimate which steps will dominate, determine appropriate worker model (default `sonnet`; use `opus` only for novel problem-solving or cross-referencing large codebases). This initial analysis is provisional — every task will be re-audited before execution.
+For each task, assess these dimensions:
+
+| Dimension | Question | Affects |
+|-----------|----------|---------|
+| Complexity | How many distinct phases or sub-problems? | Teammate count, model selection |
+| Dependencies | Does it require output from a prior task? | Execution order |
+| Novelty | Is this a known pattern or an open-ended investigation? | Model: `opus` for novel, `sonnet` for known patterns |
+| Risk | Could failure here block other tasks? | Priority, whether to assign `opus` |
+| Scope clarity | Can the task be described in a single prompt? | Whether to split into emergent tasks now |
+
+This initial analysis is provisional — every task will be re-audited before execution. Default model is `sonnet`; use `opus` only when novelty or risk demands it.
 
 ### 1.3 Align with User via Brainstorming
 
@@ -51,12 +61,12 @@ Verify no other `skills/aitc-task-xxx/` exists. Only one active directory at any
 
 Instance task SKILLs parameterize project skills with concrete values for this session. All placeholders are known after plan generation — fill them now so Execute mode can use them directly.
 
-Use `Skill("task-skills-creator")` in instance mode:
+Use `Skill("task-skills-creator")` in instance mode. Provide all parameters in the invocation so the SKILL does not need to re-ask:
 
 ```
 Skill("task-skills-creator")
 
-Create an instance task SKILL for base skill "guardian" with these parameters:
+Create an instance task SKILL for base skill "guardian" with these parameters (do not re-ask — all values are provided):
 - team_name: <from plan>
 - batch_name: <from plan>
 - instance_skill_path: skills/aitc-task-<batch>/guardian-<batch>.md
