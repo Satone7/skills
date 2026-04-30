@@ -1,73 +1,103 @@
-# Lifecycle Mode — Archive & Promote Task SKILLs
+# Lifecycle Mode — Detailed Procedures
 
-## Entry Condition
+This reference contains the detailed procedures for each lifecycle action. The SKILL itself contains the decision logic, classification rules, and boundary conditions.
 
-- All teammates have completed and been shut down
-- Cross-task synthesis (if specified in plan) is done
-- User indicates "wrap up", "archive", "promote", or all tasks have been marked complete
+## Merge Procedure (supplement type)
 
-## 3.1 Inventory Task SKILLs
+### Pre-merge Checks
 
-List all files in `skills/aitc-task-<batch>/` (excluding `.discovery-hints.md`).
+1. Read the task SKILL's `## What` and `## How` sections
+2. Read the target project skill's full content
+3. Identify where the supplement's content fits:
+   - If it corrects a specific section → mark that section for replacement
+   - If it adds new content → identify the insertion point
+   - If it contradicts existing content → flag for user review
 
-For each, read the frontmatter to determine type:
-- `task-type: new` — entirely new operational knowledge
-- `task-type: supplement` with `supplements: <skill>` — corrections or additions to existing skill
-- `task-type: instance` with `instance-of: <skill>` — parameterized instance
+### Generating the Merged Version
 
-## 3.2 Present Summary to User
+1. Start from the target project skill's current content
+2. Apply corrections from the supplement's `## How` section
+3. If the supplement corrects a procedure, replace the old procedure — don't keep both versions
+4. If the supplement adds knowledge, insert it in the most natural location
+5. Do NOT merge the `## Discoveries` section — that's session-specific
 
-Present a table of all task SKILLs with preliminary recommendations:
+### Validation
 
-| Task SKILL | Type | Supplements / Instance-Of | Content Summary | Recommendation |
-|------------|------|---------------------------|-----------------|----------------|
-| ... | new | — | ... | Promote to project/global skill |
-| ... | supplement | some-skill | ... | Merge into some-skill |
-| ... | instance | some-skill | ... | Archive as reference |
+After generating the merged version:
+1. Verify frontmatter is intact (name, description unchanged)
+2. Verify no duplicate sections
+3. Verify internal references still point to correct locations
+4. Show the user `git diff` before applying
 
-Recommendation logic:
-- **new + cross-project applicable** → promote to global skill (`~/.claude/skills/`)
-- **new + project-specific** → promote to project skill (`skills/`)
-- **supplement with still-valid corrections** → merge into the target project skill
-- **supplement already absorbed** (target skill was already updated during execution) → delete
-- **instance** → archive as reference for future work sessions
+### On Conflict
 
-Ask the user to confirm or override each recommendation, one at a time.
+If the supplement's corrections conflict with content that was independently updated during execution:
+1. Keep the more recent version (execution-time update takes priority)
+2. Note the conflict in the commit message
+3. Ask the user if they want to review the conflict manually
 
-## 3.3 Execute User's Decisions
+## Promote Procedure (new type)
 
-### Merge (supplement type)
-1. Read both the task SKILL and the original project skill
-2. Generate the merged version — fold the task SKILL's corrections into the original
-3. Show the user the diff before applying
-4. On confirmation, update the project skill
-5. Delete the task SKILL (its content now lives in the project skill)
+### Tier Selection
 
-### Promote (new type)
-1. Determine target tier (project vs global) based on domain specificity
-2. Copy to the target location with frontmatter cleanup:
-   - Remove `task-type`, `batch`, `supplements`, `instance-of` fields
-   - Set `type: project` or `type: global`
-   - Keep `created` date, add `promoted: <YYYY-MM-DD>`
-3. Use the final skill name (respecting any renames that happened during execution)
+| Criteria | Target Tier | Location |
+|----------|-------------|----------|
+| General tooling, debugging, workflows applicable to any project | Global | `~/.claude/skills/<name>/` |
+| Domain or project-specific knowledge | Project | `skills/<name>/` |
 
-### Archive (instance type, or user preference)
-1. Move to `archived/aitc-task-<batch>/`
-2. Keep as read-only reference — no further action needed
+### Frontmatter Cleanup
 
-### Delete
-1. Remove the file
-2. Appropriate when: the knowledge was a false lead, or has been fully absorbed into another skill
+When promoting, transform the frontmatter:
 
-## 3.4 Cleanup
+**From:**
+```yaml
+name: <descriptive-kebab-name>
+description: <one-line>
+type: task
+task-type: new
+batch: <batch-name>
+created: <YYYY-MM-DD>
+status: active
+```
 
-1. Remove `.discovery-hints.md` (transient Lead scratchpad)
-2. If `skills/aitc-task-<batch>/` is empty, remove the directory
-3. Commit all changes:
-   ```bash
-   git add docs/plans/<batch>.md
-   git add skills/aitc-task-<batch>/   # or archived/
-   git add skills/<any-updated-project-skills>/
-   git commit -m "chore: archive <name> task SKILLs, promote discoveries"
-   ```
-4. Report summary: "Work <name> complete. N task SKILLs processed: X merged, Y promoted, Z archived, W deleted."
+**To:**
+```yaml
+name: <descriptive-kebab-name>
+description: <one-line — review and improve trigger words>
+type: project  # or global
+created: <original-date>
+promoted: <today>
+```
+
+Remove: `task-type`, `batch`, `status`. Add: `promoted`.
+
+### Content Review
+
+Before copying, review the content:
+1. Remove any session-specific references (worktree paths, batch names, teammate names)
+2. Generalize concrete values into placeholders only if they're truly variable
+3. Keep concrete values if they're universally true (e.g., specific compiler flags)
+4. Add trigger words to `description` if the skill should auto-trigger in future sessions
+
+### Target Exists
+
+If a skill with the same name already exists at the target location:
+1. Ask the user: "A skill named `<name>` already exists. Overwrite / rename / skip?"
+2. If overwrite: show diff, confirm
+3. If rename: suggest `<name>-v2` or a descriptive variant
+4. If skip: keep the task SKILL as-is (don't delete it)
+
+## Archive Procedure (instance type)
+
+1. Create `archived/aitc-task-<batch>/` if it doesn't exist
+2. Move the file: `git mv skills/aitc-task-<batch>/<file> archived/aitc-task-<batch>/`
+3. The file stays as-is — no frontmatter changes needed
+4. Archived files serve as reference for future sessions; they are not loaded by `find-task-skills`
+
+## Cleanup Checklist
+
+After all decisions are executed:
+- [ ] `.discovery-hints.md` removed
+- [ ] Empty `skills/aitc-task-<batch>/` directory removed
+- [ ] All changes staged and committed
+- [ ] Summary reported to user with failure count
