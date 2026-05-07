@@ -1,6 +1,6 @@
 ---
 name: amd-strix-halo-gpu-npu
-version: 2.0.0
+version: 3.0.0
 description: "AMD Strix Halo GPU (ROCm) and NPU (XDNA/XRT) driver setup and usage guide. Use this skill whenever working with GPU computing, NPU inference, PyTorch on ROCm, deploying AI/ML models, running LLMs locally, or any task that needs AMD GPU/NPU acceleration on this machine. Also load this when installing ML frameworks (PyTorch, ONNX Runtime, llama.cpp with ROCm, IREE, etc.), benchmarking GPU/NPU performance, or diagnosing ROCm/XRT issues. If the task touches deep learning, model inference, or GPU-accelerated computing on this AMD hardware, load this skill first."
 ---
 
@@ -8,11 +8,14 @@ description: "AMD Strix Halo GPU (ROCm) and NPU (XDNA/XRT) driver setup and usag
 
 ## Hardware Profile
 
-- **APU**: AMD RYZEN AI MAX+ 395 w/ Radeon 8060S
+- **APU**: AMD RYZEN AI MAX+ 395 w/ Radeon 8060S (STRXLGEN, DID 0x1586)
 - **GPU Architecture**: gfx1151 (RDNA 4.5)
 - **NPU**: AMD XDNA (AIE-ML), PCI 1022:17f0 rev 0x11
-- **Memory**: Shared system memory (~109 GB available)
-- **OS**: Ubuntu 26.04, kernel 7.0.0-15
+- **Memory**: 107 GB system memory, shared GPU VRAM
+- **OS**: Ubuntu 26.04, kernel 7.0.0-15 (OEM, >= 6.14-1018 required)
+- **ROCm**: Installed via `amdgpu-install 30.30.1` with `--no-dkms` (inbox drivers)
+- **HIP**: 7.1.52801
+- **PyTorch**: 2.9.1 (Ubuntu `python3-torch-rocm`)
 
 ---
 
@@ -48,59 +51,82 @@ dpkg -l libxrt-npu2 2>/dev/null | grep -q "^ii" && echo "XRT_INSTALLED" || echo 
 ### comgr Workaround Detection
 
 ```bash
-# Check if comgr workaround is active
-readlink -f /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3 2>/dev/null | grep -q "rocm-backup" && echo "COMGR_WORKAROUND_ACTIVE" || echo "COMGR_NEEDS_WORKAROUND"
+# Check if comgr symlink points to the working library (>= 100MB, not the broken ~58MB one)
+COMGR_SIZE=$(stat -c%s "$(readlink -f /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3)" 2>/dev/null || echo 0)
+[ "$COMGR_SIZE" -gt 100000000 ] 2>/dev/null && echo "COMGR_OK" || echo "COMGR_NEEDS_FIX"
 ```
 
 ---
 
 ## GPU Installation
 
-### Step 1: Install ROCm Packages
+### Step 1: User Groups (REQUIRED)
+
+Add current user to `render` and `video` groups for GPU resource access. Reboot required.
 
 ```bash
-sudo apt update
-sudo apt install -y rocminfo rocm-smi rocm-device-libs-21 libamdhip64-7 libamdhip64-dev \
-    hipcc-rocm librocblas5 libmiopen1 librccl1
+sudo usermod -a -G render,video $LOGNAME
+# Reboot after this
 ```
 
 **Verify:**
 ```bash
-rocm-smi                    # Should show GPU info
-rocminfo | grep -A5 "CPU"   # Should show HSA agents
-rocm_agent_enumerator       # Should print: gfx1151 aie2
+groups | grep -E "render|video"
 ```
 
-### Step 2: Install PyTorch (ROCm)
+### Step 2: Install ROCm via amdgpu-install (Official Method)
+
+Follow the official AMD Ryzen ROCm installation guide. The `--no-dkms` flag is required because inbox drivers are used.
+
+```bash
+# Download and install the installer script (Ubuntu 24.04/26.04)
+wget https://repo.radeon.com/amdgpu-install/7.2.1/ubuntu/noble/amdgpu-install_7.2.1.70201-1_all.deb
+sudo apt install ./amdgpu-install_7.2.1.70201-1_all.deb
+
+# Install ROCm (no DKMS — inbox drivers only)
+amdgpu-install -y --usecase=rocm --no-dkms
+```
+
+**Verify:**
+```bash
+rocm-smi                    # Should show GPU info (Radeon 8060S)
+rocminfo | grep -A5 "Agent 2"  # Should show gfx1151
+rocm_agent_enumerator       # Should print: gfx1151
+hipcc --version             # Should show HIP 7.1
+```
+
+### Step 3: Install PyTorch (ROCm)
 
 ```bash
 sudo apt install -y python3-torch-rocm libtorch-rocm-2.9 libtorch-rocm-dev
 ```
 
-### Step 3: Apply comgr Workaround (CRITICAL)
+**IMPORTANT:** Do NOT use pip PyTorch ROCm wheels — they bundle incompatible ROCm libraries that segfault.
 
-**Problem:** Ubuntu packages `libamd-comgr3` (from `rocm-llvm`) which depends on system LLVM 21. This library has a bug where AMDGPU targets are not registered at runtime, causing `hipErrorInvalidValue` on any GPU computation.
+### Step 4: Apply comgr Workaround (CRITICAL)
 
-**Solution:** Replace with `libamd-comgr3-rocm` (from `llvm-toolchain-rocm`) which bundles ROCm's own LLVM.
+**Problem:** Ubuntu packages `libamd-comgr3` (~58MB, from `rocm-llvm`) which depends on system LLVM 21. This library has a bug where AMDGPU targets are not registered at runtime, causing `hipErrorInvalidValue` or segfault on any GPU computation.
+
+`amdgpu-install` may set the comgr symlink to point to this broken library after installation.
+
+**Solution:** Point the symlink to the correct library file (>= 100MB).
 
 ```bash
-# Install ROCm comgr (provides libamd_comgr.so.3.0.0.rocm-backup)
+# Install ROCm comgr (provides the working library)
 sudo apt install -y libamd-comgr3-rocm
 
-# Backup the working ROCm comgr library
-sudo cp /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3.0.0 /tmp/libamd_comgr.so.3.0.0.rocm-backup
+# Verify the base library file is the large (working) one
+ls -lh /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3.0.0
+# Should be ~132MB, NOT ~58MB
 
-# If libamd-comgr3 was installed by apt as a dependency, swap the library:
-sudo cp /tmp/libamd_comgr.so.3.0.0.rocm-backup /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3.0.0
-
-# Update symlink to point to the working library
+# Fix symlink to point to the base file (not any backup)
 sudo ln -sf libamd_comgr.so.3.0.0 /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3
 ```
 
 **Verify:**
 ```bash
-# Check workaround is active
-readlink -f /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3 | grep -q "rocm-backup" && echo "OK" || echo "NEEDS_FIX"
+# Check symlink points to large library
+stat -c%s "$(readlink -f /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3)" | grep -qE "^[1-9][0-9]{8,}" && echo "COMGR_OK" || echo "COMGR_NEEDS_FIX"
 
 # Verify GPU compute works
 python3 -c "
@@ -111,11 +137,30 @@ print('GPU_COMPUTE_OK')
 "
 ```
 
-**After `apt upgrade` that touches `libamd-comgr3`:**
+**After `apt upgrade` or `amdgpu-install` that touches comgr:**
 ```bash
-# Re-apply workaround
-sudo cp /tmp/libamd_comgr.so.3.0.0.rocm-backup /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3.0.0
+# Check and re-apply if needed
+COMGR_SIZE=$(stat -c%s "$(readlink -f /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3)" 2>/dev/null || echo 0)
+[ "$COMGR_SIZE" -lt 100000000 ] && sudo ln -sf libamd_comgr.so.3.0.0 /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3
 ```
+
+### Step 5: Configure Shared Memory (TTM)
+
+ROCm uses shared system memory. Default is ~50% of system RAM. Use `amd-ttm` to adjust.
+
+```bash
+# Install amd-ttm tool
+pipx install amd-debug-tools
+
+# Query current setting
+amd-ttm
+
+# Set to desired GB (e.g., 80 GB)
+amd-ttm --set 80
+# Reboot required
+```
+
+**BIOS recommendation:** Set minimum dedicated VRAM to 0.5GB in BIOS, then set TTM to a larger amount.
 
 ---
 
@@ -191,7 +236,8 @@ print(f"VRAM: {props.total_memory / 1024**3:.1f} GB")
 
 ### Important Notes
 
-- **Do NOT use pip PyTorch ROCm wheels** (rocm7.0) — they bundle incompatible ROCm 7.0 libraries that segfault on this ROCm 7.1.1 system.
+- **Do NOT use pip PyTorch ROCm wheels** — they bundle incompatible ROCm libraries that segfault. Use Ubuntu `python3-torch-rocm` instead.
+- **amdgpu-install sets broken comgr symlink** — After running `amdgpu-install`, the `libamd_comgr.so.3` symlink may point to the broken Ubuntu comgr (~58MB). Always verify and fix after installation.
 - The Debian package works correctly once the comgr workaround is applied.
 - `HIP_CLANG_PATH` and `ROCM_PATH` are not needed — system packages handle paths.
 
@@ -215,21 +261,26 @@ print(f"VRAM: {props.total_memory / 1024**3:.1f} GB")
 | NPU device | `ls -la /dev/accel/accel0` |
 | NPU status | `xrt-smi examine` (requires unlimited memlock) |
 | Check memlock | `ulimit -l` |
-| Fix comgr | `sudo cp /tmp/libamd_comgr.so.3.0.0.rocm-backup /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3.0.0` |
+| Fix comgr | `sudo ln -sf libamd_comgr.so.3.0.0 /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3` |
+| TTM memory | `amd-ttm` / `amd-ttm --set <GB>` |
 | HIP compile | `hipcc -L/usr/lib/x86_64-linux-gnu -lamdhip64 code.cpp -o code` |
 
 ---
 
 ## Troubleshooting
 
-### GPU: "hipErrorInvalidValue" / "no targets are registered"
+### GPU: Segfault or "hipErrorInvalidValue" / "no targets are registered"
 
-The comgr workaround is not applied or was overwritten.
+The comgr workaround is not applied or was overwritten by `apt upgrade` / `amdgpu-install`.
 
 **Fix:**
 ```bash
-# Re-apply workaround
-sudo cp /tmp/libamd_comgr.so.3.0.0.rocm-backup /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3.0.0
+# Check current library size (must be > 100MB)
+COMGR_SIZE=$(stat -c%s "$(readlink -f /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3)" 2>/dev/null || echo 0)
+echo "Current comgr size: $COMGR_SIZE bytes"
+
+# Fix symlink to point to the working base library
+sudo ln -sf libamd_comgr.so.3.0.0 /usr/lib/x86_64-linux-gnu/libamd_comgr.so.3
 ```
 
 ### GPU: Segfault with pip PyTorch ROCm wheel

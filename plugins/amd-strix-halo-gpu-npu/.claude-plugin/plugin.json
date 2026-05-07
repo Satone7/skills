@@ -1,5 +1,5 @@
 {
   "name": "amd-strix-halo-gpu-npu",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "AMD Strix Halo GPU (ROCm) and NPU (XDNA/XRT) driver setup and usage guide for GPU computing, NPU inference, and ML framework installation on AMD hardware."
 }
