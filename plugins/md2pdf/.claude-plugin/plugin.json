@@ -1,7 +1,7 @@
 {
   "name": "md2pdf",
-  "version": "1.0.0",
-  "description": "Convert Markdown documents to PDF with CJK/Latin mixed text, code blocks, tables, and clickable TOC. Simplified GitHub Light theme.",
+  "version": "1.1.0",
+  "description": "Convert Markdown documents to PDF with CJK/Latin mixed text, code blocks, tables, LaTeX math, and clickable TOC. Simplified GitHub Light theme.",
   "dependencies": {
     "tools": ["python>=3.8"],
     "packages": ["reportlab"]

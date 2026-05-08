@@ -162,6 +162,127 @@ def _font_wrap(text):
         out.append(f"<font name='CJK'>{seg}</font>" if in_cjk else seg)
     return ''.join(out)
 
+# ═══════════════════════════════════════════════════════════════════════
+# LATEX MATH → REPORTLAB MARKUP
+# ═══════════════════════════════════════════════════════════════════════
+_GREEK = {
+    'alpha':'α','beta':'β','gamma':'γ','delta':'δ','epsilon':'ε',
+    'zeta':'ζ','eta':'η','theta':'θ','iota':'ι','kappa':'κ',
+    'lambda':'λ','mu':'μ','nu':'ν','xi':'ξ','pi':'π','rho':'ρ',
+    'sigma':'σ','tau':'τ','upsilon':'υ','phi':'φ','chi':'χ',
+    'psi':'ψ','omega':'ω','varepsilon':'ε','vartheta':'ϑ',
+    'Gamma':'Γ','Delta':'Δ','Theta':'Θ','Lambda':'Λ','Xi':'Ξ',
+    'Pi':'Π','Sigma':'Σ','Phi':'Φ','Psi':'Ψ','Omega':'Ω',
+}
+
+_MATH_SYM = {
+    'times':'×','div':'÷','pm':'±','mp':'∓',
+    'leq':'≤','geq':'≥','le':'≤','ge':'≥','neq':'≠','ne':'≠',
+    'approx':'≈','equiv':'≡','sim':'~','simeq':'≅',
+    'cdot':'·','ldots':'…','cdots':'…','dots':'…',
+    'Rightarrow':'⇒','Leftarrow':'⇐','Leftrightarrow':'⇔',
+    'rightarrow':'→','leftarrow':'←',
+    'infty':'∞','partial':'∂','nabla':'∇',
+    'forall':'∀','exists':'∃','in':'∈','notin':'∉',
+    'subset':'⊂','supset':'⊃','subseteq':'⊆','supseteq':'⊇',
+    'sum':'∑','prod':'∏','int':'∫',
+    'quad':'  ','qquad':'    ',
+    'to':'→','gets':'←',
+    'mapsto':'↦','implies':'⇒',
+    'll':'≪','gg':'≫',
+    'oplus':'⊕','otimes':'⊗',
+    'cap':'∩','cup':'∪',
+    'vee':'∨','wedge':'∧',
+    'neg':'¬','lnot':'¬',
+    'perp':'⊥','parallel':'∥',
+    'angle':'∠','triangle':'△',
+    'circ':'∘','bullet':'•',
+    'star':'★','ast':'*',
+}
+
+def convert_math(latex_str):
+    """Convert LaTeX math expression to ReportLab inline markup."""
+    t = latex_str.strip()
+
+    # 1. Text formatting commands (handle first for nested content)
+    def _text_cmd(m):
+        cmd, content = m.group(1), m.group(2)
+        if cmd == 'textbf': return f'<b>{content}</b>'
+        if cmd == 'textit': return f'<i>{content}</i>'
+        return content
+    t = re.sub(r'\\(textbf|textit|text)\{([^}]*)\}', _text_cmd, t)
+
+    # 2. \text{...} without braces already handled, also handle \mathrm, \mathbf
+    t = re.sub(r'\\(mathrm|mathbf|mathit)\{([^}]*)\}', r'\2', t)
+
+    # 3. Fractions and roots
+    t = re.sub(r'\\frac\{([^}]*)\}\{([^}]*)\}', r'(\1)/(\2)', t)
+    t = re.sub(r'\\tfrac\{([^}]*)\}\{([^}]*)\}', r'(\1)/(\2)', t)
+    t = re.sub(r'\\dfrac\{([^}]*)\}\{([^}]*)\}', r'(\1)/(\2)', t)
+    t = re.sub(r'\\sqrt(?:\[[^\]]*\])?\{([^}]*)\}', r'√(\1)', t)
+
+    # 4. Delimiters
+    t = re.sub(r'\\left\b', '', t)
+    t = re.sub(r'\\right\b', '', t)
+    t = re.sub(r'\\[Bb]ig[lr]\b', '', t)
+    t = re.sub(r'\\[Bb]igg[lr]\b', '', t)
+    t = re.sub(r'\\underbrace\{([^}]*)\}', r'(\1)', t)
+    t = re.sub(r'\\overbrace\{([^}]*)\}', r'(\1)', t)
+
+    # 5. Subscripts and superscripts
+    t = re.sub(r'_\{([^}]*)\}', r'<sub>\1</sub>', t)
+    t = re.sub(r'_([a-zA-Z0-9])', r'<sub>\1</sub>', t)
+    t = re.sub(r'\^\{([^}]*)\}', r'<super>\1</super>', t)
+    t = re.sub(r'\^([a-zA-Z0-9])', r'<super>\1</super>', t)
+
+    # 6. Greek letters (longer names first to avoid partial matches)
+    for name, ch in sorted(_GREEK.items(), key=lambda x: -len(x[0])):
+        t = t.replace(f'\\{name}', ch)
+
+    # 7. Math symbols (longer names first)
+    for name, ch in sorted(_MATH_SYM.items(), key=lambda x: -len(x[0])):
+        t = t.replace(f'\\{name}', ch)
+
+    # 8. Escaped special characters (placeholders for later)
+    t = t.replace('\\%', '__PCT__')
+    t = t.replace('\\&', '__AMP__')
+    t = t.replace('\\#', '#')
+    t = t.replace('\\_', '_')
+
+    # 9. Spacing commands and other non-alphabetic commands
+    t = re.sub(r'\\[!;,:> ]', ' ', t)
+    t = re.sub(r'\\[<|]', ' ', t)
+    t = t.replace('~', ' ')
+    t = t.replace('\\\\', ' ')
+
+    # 10. Remove remaining unknown commands
+    t = re.sub(r'\\[a-zA-Z]+\*?', '', t)
+
+    # 11. Clean up stray braces
+    t = t.replace('{', '').replace('}', '')
+
+    # 12. Protect ReportLab markup tags from escaping
+    for tag in ['sub', 'super', 'b', 'i']:
+        t = t.replace(f'<{tag}>', f'__OPEN_{tag}__')
+        t = t.replace(f'</{tag}>', f'__CLOSE_{tag}__')
+
+    # 13. Escape < > & for ReportLab Paragraph
+    t = t.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+    # 14. Restore ReportLab markup tags
+    for tag in ['sub', 'super', 'b', 'i']:
+        t = t.replace(f'__OPEN_{tag}__', f'<{tag}>')
+        t = t.replace(f'__CLOSE_{tag}__', f'</{tag}>')
+
+    # 15. Restore escaped special characters
+    t = t.replace('__PCT__', '%')
+    t = t.replace('__AMP__', '&amp;')
+
+    # 16. Clean up multiple spaces
+    t = re.sub(r' +', ' ', t).strip()
+
+    return t
+
 def _scan_unsupported_formats(md_text):
     """Scan markdown for italic/strikethrough markers that bundled fonts cannot render.
 
@@ -228,19 +349,51 @@ def esc_code(text):
     return '<br/>'.join(out)
 
 def md_inline(text, accent_hex="#0969DA"):
+    # Step 0: Extract code spans (protect from math/bold/italic detection)
+    _code_map = {}; _code_idx = [0]
+    def _save_code(m):
+        k = f"__CODE_{_code_idx[0]}__"; _code_idx[0] += 1
+        _code_map[k] = m.group(1); return k
+    text = re.sub(r'`(.+?)`', _save_code, text)
+
+    # Step 1: Extract math expressions (before HTML-escaping)
+    _math_map = {}; _math_idx = [0]
+    def _is_math(content):
+        """Heuristic: distinguish LaTeX math from currency ($100) etc."""
+        if re.search(r'\\[a-zA-Z]', content): return True  # LaTeX command
+        if re.search(r'[_^{]', content): return True  # subscript/superscript
+        if re.search(r'[α-ωΑ-Ω∑∏∫∞≈≠≤≥⇐⇒→←∂∇±∓÷×⊙⊕⊗⊥∥∠√≠≥≤]', content): return True
+        if re.search(r'[=+\-*/<>]', content) and re.search(r'[a-zA-Z]', content): return True
+        if re.match(r'^[\d,.\-%\s]+$', content.strip()): return False  # plain number
+        if ' ' in content and not re.search(r'[_^{=+*/\\]', content): return False
+        return True
+    def _save_math(m):
+        if not _is_math(m.group(1)): return m.group(0)  # not math, keep as-is
+        k = f"__MATH_{_math_idx[0]}__"; _math_idx[0] += 1
+        _math_map[k] = m.group(1); return k
+    # $$...$$ (inline display math)
+    text = re.sub(r'\$\$(.+?)\$\$', _save_math, text)
+    # $...$ (inline math, not $$)
+    text = re.sub(r'(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)', _save_math, text)
+
+    # Step 2: HTML-escape the text (math already extracted)
     text = esc(text)
-    # Bold italic: ***text***
+
+    # Step 3: Bold italic, Bold, Italic
     text = re.sub(r'\*\*\*(.+?)\*\*\*', r'<b><i>\1</i></b>', text)
-    # Bold: **text**
     text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
-    # Italic: *text*
     text = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'<i>\1</i>', text)
-    # Inline code: `code`
-    text = re.sub(r'`(.+?)`',
-        rf"<font name='Mono' size='8' color='{accent_hex}'>\1</font>", text)
-    # Link: [text](url)
+
+    # Step 4: Re-insert code spans
+    for k, code in _code_map.items():
+        text = text.replace(k, rf"<font name='Mono' size='8' color='{accent_hex}'>{esc(code)}</font>")
+
+    # Step 5: Re-insert math expressions (already converted)
+    for k, latex in _math_map.items():
+        text = text.replace(k, convert_math(latex))
+
+    # Step 6: Link, Strikethrough
     text = re.sub(r'\[(.+?)\]\(.+?\)', r'<u>\1</u>', text)
-    # Strikethrough: ~~text~~ → muted color (reportlab has no native strike-through)
     text = re.sub(r'~~(.+?)~~', r"<font color='#656D76'>\1</font>", text)
     return _font_wrap(text)
 
@@ -309,6 +462,10 @@ class SimplePDFBuilder:
             leading=12, textColor=white, alignment=TA_CENTER)
         s['tc'] = ParagraphStyle('TC', fontName="Sans", fontSize=8,
             leading=11, textColor=THEME["ink"], alignment=TA_LEFT)
+        # Math
+        s['math'] = ParagraphStyle('Math', fontName="Sans", fontSize=11,
+            leading=16, textColor=THEME["ink"], alignment=TA_CENTER,
+            spaceBefore=8, spaceAfter=8)
         return s
 
     def _normal_page(self, c, doc):
@@ -379,6 +536,27 @@ class SimplePDFBuilder:
 
         while i < len(lines):
             line = lines[i]; stripped = line.strip()
+
+            # Block math: $$...$$
+            if stripped.startswith('$$') and not stripped.startswith('$$$'):
+                if stripped.endswith('$$') and len(stripped) > 4:
+                    formula = stripped[2:-2].strip()
+                    i += 1
+                else:
+                    formula_lines = [stripped[2:].strip()]
+                    i += 1
+                    while i < len(lines):
+                        l = lines[i].strip()
+                        if l == '$$':
+                            i += 1; break
+                        formula_lines.append(l)
+                        i += 1
+                    formula = ' '.join(formula_lines)
+                converted = convert_math(formula)
+                if converted:
+                    story.append(Paragraph(converted, ST['math']))
+                continue
+
             # Code blocks
             if stripped.startswith('```'):
                 if in_code:

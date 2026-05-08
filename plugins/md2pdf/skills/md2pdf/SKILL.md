@@ -1,11 +1,11 @@
 ---
 name: rvfuse:md2pdf
-version: 1.0.0
+version: 1.1.0
 description: >
   Convert Markdown documents to PDF for RVFuse project reports.
   Simplified version based on any2pdf: no cover page, inline TOC (not separate page),
   no forced page breaks, GitHub Light theme. Handles CJK/Latin mixed text,
-  tables, code blocks.
+  tables, code blocks, LaTeX math formulas ($...$, $$...$$).
   IMPORTANT: Use this skill whenever the user mentions:
   "md转pdf", "md to pdf", "markdown转pdf", "转成PDF", "生成PDF",
   converting any .md file in docs/report/ to PDF, "报告PDF", "导出PDF", "导出报告",
