@@ -1,0 +1,11 @@
+{
+  "name": "nas-index",
+  "version": "1.0.0",
+  "description": "NAS file system index and navigation guide for /mnt/nas/database. Enables agents to quickly locate files across Downloads, backups, media libraries, Docker configs, AI models, and other NAS directories.",
+  "skills": [
+    {
+      "name": "nas-index",
+      "path": "./skills/nas-index"
+    }
+  ]
+}

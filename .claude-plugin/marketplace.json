@@ -36,6 +36,16 @@
       "name": "amd-strix-halo-gpu-npu",
       "source": "./plugins/amd-strix-halo-gpu-npu",
       "description": "AMD Strix Halo GPU (ROCm) and NPU (XDNA/XRT) driver setup and usage guide for GPU computing, NPU inference, and ML framework installation on AMD hardware."
+    },
+    {
+      "name": "nas-index",
+      "source": "./plugins/nas-index",
+      "description": "NAS file system index and navigation guide for /mnt/nas/database. Enables agents to quickly locate files across Downloads, backups, media libraries, Docker configs, AI models, and other NAS directories."
+    },
+    {
+      "name": "knowledge-base",
+      "source": "./plugins/knowledge-base",
+      "description": "Personal knowledge base on NAS — read, write, search, and maintain notes across categories (tech notes, reading notes, project docs, resources, daily notes, CGRA papers). Access via SSH."
     }
   ]
 }

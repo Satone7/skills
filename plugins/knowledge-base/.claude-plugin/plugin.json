@@ -1,0 +1,5 @@
+{
+  "name": "knowledge-base",
+  "description": "Personal knowledge base on NAS — read, write, search, and maintain notes across categories (tech notes, reading notes, project docs, resources, daily notes, CGRA papers). Access via SSH to NAS.",
+  "version": "0.3.0"
+}
