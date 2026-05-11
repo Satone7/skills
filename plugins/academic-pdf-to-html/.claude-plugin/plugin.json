@@ -1,0 +1,8 @@
+{
+  "name": "academic-pdf-to-html",
+  "version": "1.0.0",
+  "description": "Convert academic PDF papers to beautifully styled HTML documents with Chinese summaries, chapter indexes, and properly grouped figures. Uses MinerU for extraction and deterministic post-processing.",
+  "dependencies": {
+    "tools": ["python>=3.8", "mineru-open-api"]
+  }
+}

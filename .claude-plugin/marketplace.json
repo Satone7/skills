@@ -46,6 +46,11 @@
       "name": "knowledge-base",
       "source": "./plugins/knowledge-base",
       "description": "Personal knowledge base on NAS — read, write, search, and maintain notes across categories (tech notes, reading notes, project docs, resources, daily notes, CGRA papers). Access via SSH."
+    },
+    {
+      "name": "academic-pdf-to-html",
+      "source": "./plugins/academic-pdf-to-html",
+      "description": "Convert academic PDF papers to beautifully styled HTML with Chinese summaries, chapter indexes, and grouped figures. Uses MinerU for extraction and deterministic post-processing."
     }
   ]
 }

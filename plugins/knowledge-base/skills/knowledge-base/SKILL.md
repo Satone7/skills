@@ -1,6 +1,6 @@
 ---
-name: nas-knowledge-base
-version: 0.3.0
+name: knowledge-base
+version: 0.3.2
 description: >
   Access and manage the personal knowledge base stored on NAS via SSH.
   Connection parameters are loaded from env vars (KB_HOST, KB_PORT, KB_USER)
@@ -14,7 +14,7 @@ description: >
   that might be stored in the knowledge base.
 ---
 
-# NAS Knowledge Base
+# Knowledge Base
 
 A personal knowledge base living on the NAS, accessed exclusively via SSH. The knowledge base stores notes across categorized directories, with a central index file and a CLAUDE.md governing its conventions.
 
@@ -50,6 +50,14 @@ ssh -o BatchMode=yes -o ConnectTimeout=5 -p $KB_PORT $KB_USER@$KB_HOST echo "OK"
 ```
 
 If this fails, the current machine does not have SSH key access. Inform the user and stop — do not attempt alternative access methods.
+
+7. **Read CLAUDE.md first**: Before any knowledge base operation, read the conventions file:
+
+```bash
+ssh -p $KB_PORT $KB_USER@$KB_HOST "cat '~/kb/CLAUDE.md'"
+```
+
+This file defines the knowledge base's structure, naming conventions, and operational rules. Understanding it ensures consistency with existing notes and prevents accidental breakage.
 
 All operations go through SSH. Do not use local CIFS mounts.
 

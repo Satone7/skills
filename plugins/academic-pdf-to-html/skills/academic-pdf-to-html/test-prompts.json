@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "prompt": "把 /home/pren/projects/cgra/paper/CGRA-Survey.pdf 转成HTML，保留插图和表格，加中文摘要",
+    "expected": "生成美化的HTML文件，包含：学术论文样式、图片和表格正常显示、中文摘要框、章节索引，图片用figure包裹有caption"
+  },
+  {
+    "id": 2,
+    "prompt": "Convert the paper at /home/pren/projects/cgra/paper/Accelerating Edge AI with Morpher.pdf to a beautiful web page I can read in my browser",
+    "expected": "自动触发skill，走完extract→postprocess→中文摘要→TOC流程，输出可直接浏览器打开的HTML"
+  },
+  {
+    "id": 3,
+    "prompt": "论文转网页，paper目录下所有PDF都要转，批量处理",
+    "expected": "识别为批量场景，用batch processing模式，循环处理每个PDF，每个都走完整流程"
+  }
+]
