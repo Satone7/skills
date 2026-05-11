@@ -1,6 +1,6 @@
 ---
 name: knowledge-base
-version: 0.3.2
+version: 0.3.3
 description: >
   Access and manage the personal knowledge base stored on NAS via SSH.
   Connection parameters are loaded from env vars (KB_HOST, KB_PORT, KB_USER)
@@ -54,7 +54,7 @@ If this fails, the current machine does not have SSH key access. Inform the user
 7. **Read CLAUDE.md first**: Before any knowledge base operation, read the conventions file:
 
 ```bash
-ssh -p $KB_PORT $KB_USER@$KB_HOST "cat '~/kb/CLAUDE.md'"
+ssh -p $KB_PORT $KB_USER@$KB_HOST 'cat ~/kb/CLAUDE.md'
 ```
 
 This file defines the knowledge base's structure, naming conventions, and operational rules. Understanding it ensures consistency with existing notes and prevents accidental breakage.
@@ -66,13 +66,19 @@ All operations go through SSH. Do not use local CIFS mounts.
 All file operations use this base pattern (using resolved config values):
 
 ```bash
-ssh -p $KB_PORT $KB_USER@$KB_HOST "<command>"
+ssh -p $KB_PORT $KB_USER@$KB_HOST '<command>'
 ```
 
-The knowledge base is accessed via `~/kb` on the remote side. For paths containing emoji or spaces, always use single quotes:
+Note: Use single quotes around the command to prevent local shell expansion. The knowledge base path uses `$HOME/kb` on the remote side. For paths containing emoji or spaces, wrap the path in double quotes inside the single-quoted command:
 
 ```bash
-ssh -p $KB_PORT $KB_USER@$KB_HOST "ls '~/kb/💡 技术笔记/'"
+ssh -p $KB_PORT $KB_USER@$KB_HOST 'ls "$HOME/kb/💡 技术笔记/"'
+```
+
+Alternatively, escape spaces with `\`:
+
+```bash
+ssh -p $KB_PORT $KB_USER@$KB_HOST 'ls ~/kb/💡\ 技术笔记/'
 ```
 
 ## Directory Structure
@@ -97,19 +103,19 @@ ssh -p $KB_PORT $KB_USER@$KB_HOST "ls '~/kb/💡 技术笔记/'"
 Search across the knowledge base using grep:
 
 ```bash
-ssh -p $KB_PORT $KB_USER@$KB_HOST "grep -ril '关键词' '~/kb/'"
+ssh -p $KB_PORT $KB_USER@$KB_HOST 'grep -ril "关键词" "$HOME/kb/"'
 ```
 
 List files in a specific category:
 
 ```bash
-ssh -p $KB_PORT $KB_USER@$KB_HOST "ls '~/kb/💡 技术笔记/'"
+ssh -p $KB_PORT $KB_USER@$KB_HOST 'ls "$HOME/kb/💡 技术笔记/"'
 ```
 
 Read a specific note:
 
 ```bash
-ssh -p $KB_PORT $KB_USER@$KB_HOST "cat '~/kb/💡 技术笔记/<filename>'"
+ssh -p $KB_PORT $KB_USER@$KB_HOST 'cat "$HOME/kb/💡 技术笔记/<filename>"'
 ```
 
 ### 2. Write / Create Note
@@ -117,7 +123,23 @@ ssh -p $KB_PORT $KB_USER@$KB_HOST "cat '~/kb/💡 技术笔记/<filename>'"
 Determine the correct category directory, then write:
 
 ```bash
-ssh -p $KB_PORT $KB_USER@$KB_HOST "cat > '~/kb/<category>/<filename>.md' << 'NOTEEOF'
+ssh -p $KB_PORT $KB_USER@$KB_HOST 'cat > "$HOME/kb/<category>/<filename>.md" << '\''NOTEEOF'\''
+<content>
+NOTEEOF'
+```
+
+For simpler paths without special characters:
+
+```bash
+ssh -p $KB_PORT $KB_USER@$KB_HOST 'cat > ~/kb/<category>/<filename>.md << '\''NOTEEOF'\''
+<content>
+NOTEEOF'
+```
+
+Alternatively, use double quotes around the whole command and escape spaces in the path:
+
+```bash
+ssh -p $KB_PORT $KB_USER@$KB_HOST "cat > ~/kb/💡\ 技术笔记/<filename>.md << 'NOTEEOF'
 <content>
 NOTEEOF"
 ```
@@ -232,15 +254,15 @@ Read the current file first. After making changes:
 Overwrite via SSH:
 
 ```bash
-ssh -p $KB_PORT $KB_USER@$KB_HOST "cat > '~/kb/<category>/<filename>' << 'NOTEEOF'
+ssh -p $KB_PORT $KB_USER@$KB_HOST 'cat > "$HOME/kb/<category>/<filename>" << '\''NOTEEOF'\''
 <updated content>
-NOTEEOF"
+NOTEEOF'
 ```
 
 If converting from `.md` to `.html`, also remove the old file:
 
 ```bash
-ssh -p $KB_PORT $KB_USER@$KB_HOST "rm '~/kb/<category>/<old_filename>.md'"
+ssh -p $KB_PORT $KB_USER@$KB_HOST 'rm "$HOME/kb/<category>/<old_filename>.md"'
 ```
 
 When updating, preserve the existing structure and only modify the relevant sections. Update the "最后更新" or creation timestamp at the bottom.
@@ -250,9 +272,9 @@ When updating, preserve the existing structure and only modify the relevant sect
 After creating a significant new note or restructuring, update the central index:
 
 ```bash
-ssh -p $KB_PORT $KB_USER@$KB_HOST "cat > '~/kb/📑 索引.md' << 'NOTEEOF'
+ssh -p $KB_PORT $KB_USER@$KB_HOST 'cat > "$HOME/kb/📑 索引.md" << '\''NOTEEOF'\''
 <updated index content>
-NOTEEOF"
+NOTEEOF'
 ```
 
 The index currently lists each category with a brief description and a link. When adding a new category or a significant new sub-section, reflect it here. Update the "最后更新" date.
